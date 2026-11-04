@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucrarea 4 – Programare microcontrolere, IDE Arduino</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--tx:#14202e;--mut:#5a6b7e;--ac:#1f6fd1;--bd:#dde4ec;--ok:#1e9e5a;--warn:#e08a00;--bad:#d23c3c;--svgbg:#eef3f9;--code:#0f1720;--codetx:#d7e3f2}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#1b2633;--tx:#e6edf3;--mut:#8b9bb0;--ac:#4aa3ff;--bd:#2c3b4e;--ok:#3ec47e;--warn:#f0a020;--bad:#ef5b5b;--svgbg:#162130;--code:#0b1118}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:14px 16px 0;max-width:1100px;margin:0 auto}
+header a{color:var(--ac);font-size:13px;text-decoration:none}
+h1{font-size:20px;margin:4px 0 2px}
+header p{margin:0 0 10px;color:var(--mut);font-size:13px}
+nav{display:flex;gap:4px;flex-wrap:wrap;max-width:1100px;margin:0 auto;padding:0 16px;border-bottom:1px solid var(--bd)}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;color:var(--mut);font:inherit;font-weight:600;cursor:pointer}
+nav button.on{color:var(--ac);border-color:var(--ac)}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{display:none}section.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:14px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:15px}
+.row{margin:9px 0}
+.row label{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:13px}
+.row b{color:var(--tx);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%}
+select,input[type=number],input[type=text],textarea{width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:6px;font:inherit}
+button.b{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:8px 12px;font-weight:700;cursor:pointer;font-size:14px}
+button.b.g{background:var(--ok)}button.b.r{background:var(--bad)}button.b.n{background:var(--mut)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0}
+.kv div{background:var(--svgbg);border-radius:8px;padding:8px 10px}
+.kv span{display:block;font-size:12px;color:var(--mut)}.kv b{font-size:17px;font-variant-numeric:tabular-nums}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+canvas{width:100%;background:var(--svgbg);border-radius:8px;display:block}
+pre.code,textarea.code{background:var(--code);color:var(--codetx);border-radius:8px;padding:10px;font:12.5px/1.45 ui-monospace,Consolas,monospace;overflow:auto;margin:0;white-space:pre;tab-size:2}
+textarea.code{width:100%;height:360px;resize:vertical;border:1px solid var(--bd)}
+#ser{height:170px;overflow:auto;white-space:pre-wrap}
+small,.mut{color:var(--mut)}
+.err{background:rgba(210,60,60,.12);color:var(--bad);border-radius:6px;padding:6px 10px;margin:6px 0;font-family:ui-monospace,monospace;font-size:13px}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:4px 6px;text-align:left}
+.inl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.btnpin{user-select:none;padding:8px 12px;border-radius:6px;background:var(--svgbg);border:1px solid var(--bd);cursor:pointer;font-weight:600}
+.btnpin:active{background:var(--ac);color:#fff}
+ol li,ul li{margin:4px 0}
+</style></head><body>
+<header>
+<a href="../../">← Laboratoare</a>
+<h1>Lucrarea 4 – Programare microcontrolere. IDE Arduino</h1>
+<p>MSP2101 · Automatizarea sistemelor și proceselor industriale · Arduino Uno (ATmega328P, 16 MHz)</p>
+</header>
+<nav id="tabs">
+<button data-t="t1" class="on">1. Timer1 și PWM</button>
+<button data-t="t2">2. ADC și senzori</button>
+<button data-t="t3">3. Mini-Arduino (placă virtuală)</button>
+<button data-t="t4">4. Desfășurarea lucrării</button>
+</nav>
+<main>
+
+<!-- ============ 1. TIMER1 / PWM ============ -->
+<section id="t1" class="on">
+<div class="grid">
+<div>
+<div class="card"><h3>Întrerupere periodică cu Timer1 (mod CTC)</h3>
+<div class="row"><label>Frecvența dorită a întreruperii <b id="v_f"></b></label><input id="f" type="range" min="0" max="100" value="30"></div>
+<div class="row"><label>Divizor (prescaler)</label><select id="ps"><option>1</option><option>8</option><option>64</option><option selected>256</option><option>1024</option></select></div>
+<div class="row"><button class="b n" id="autops">Alege cel mai bun divizor</button></div>
+<div class="kv" id="tm_out"></div>
+<small>Formula: OCR1A = f<sub>CPU</sub> / (prescaler · f) − 1, cu f<sub>CPU</sub> = 16 MHz. Timer1 numără pe 16 biți: OCR1A ≤ 65535.</small>
+</div>
+<div class="card"><h3>PWM cu analogWrite()</h3>
+<div class="row"><label>Valoare analogWrite (0…255) <b id="v_pw"></b></label><input id="pw" type="range" min="0" max="255" value="64"></div>
+<div class="row"><label>Pin</label><select id="pwpin"><option value="490">3, 9, 10, 11 (≈ 490 Hz)</option><option value="980">5, 6 (≈ 980 Hz)</option></select></div>
+<div class="kv" id="pw_out"></div>
+</div></div>
+<div>
+<div class="card"><h3>Cod generat pentru Timer1</h3><pre class="code" id="tm_code"></pre></div>
+<div class="card"><h3>Osciloscop: semnal PWM</h3><canvas id="osc" width="700" height="170"></canvas>
+<small>Tensiunea medie = 5 V · valoare / 255. Un releu mecanic nu trebuie comandat cu PWM rapid; MOSFET-ul și LED-ul da.</small></div>
+<div class="card"><h3>Osciloscop: ieșire comutată în ISR</h3><canvas id="osc2" width="700" height="130"></canvas>
+<small>Dacă ISR inversează un pin la fiecare întrerupere, frecvența semnalului este jumătate din frecvența întreruperii.</small></div>
+</div></div>
+</section>
+
+<!-- ============ 2. ADC / SENZORI ============ -->
+<section id="t2">
+<div class="grid">
+<div>
+<div class="card"><h3>Lanțul de măsurare</h3>
+<div class="row"><label>Senzor</label><select id="sn"><option value="lm35">LM35 (10 mV/°C)</option><option value="ntc">NTC 10 kΩ, β = 3950 (divizor cu 10 kΩ)</option><option value="ds">DS18B20 (digital, 12 biți)</option></select></div>
+<div class="row"><label>Temperatura reală <b id="v_Tr"></b></label><input id="Tr" type="range" min="0" max="100" step="0.1" value="37.4"></div>
+<div class="row"><label>Referință ADC</label><select id="vr"><option value="5">DEFAULT (≈ 5 V, alimentarea)</option><option value="1.1">INTERNAL (1,1 V)</option></select></div>
+<div class="row"><label>Zgomot (σ, în °C) <b id="v_nz"></b></label><input id="nz" type="range" min="0" max="1.5" step="0.05" value="0.3"></div>
+<div class="row"><label>Număr de eșantioane mediate <b id="v_nav"></b></label><input id="nav" type="range" min="1" max="64" step="1" value="1"></div>
+<div class="row"><button class="b" id="ntake">10 măsurători noi</button></div>
+</div>
+<div class="card"><h3>Rezultat</h3><div class="kv" id="ad_out"></div></div>
+</div>
+<div>
+<div class="card"><h3>Citiri succesive (°C)</h3><canvas id="adc_ch" width="700" height="220"></canvas>
+<small>Linia continuă este temperatura reală; punctele sunt valorile calculate din numărul ADC.</small></div>
+<div class="card"><h3>Formule folosite</h3><pre class="code" id="ad_code"></pre></div>
+</div></div>
+</section>
+
+<!-- ============ 3. MINI-ARDUINO ============ -->
+<section id="t3">
+<div class="grid" style="grid-template-columns:minmax(300px,1fr) minmax(300px,1fr)">
+<div>
+<div class="card"><h3>Sketch</h3>
+<div class="inl" style="margin-bottom:8px"><select id="pre" style="flex:1"></select><button class="b" id="load">Încarcă exemplul</button></div>
+<textarea class="code" id="src" spellcheck="false"></textarea>
+<div class="inl" style="margin-top:8px"><button class="b g" id="run">▶ Compilează și rulează</button><button class="b n" id="pause">⏸ Pauză</button><button class="b r" id="rst">⟲ Reset proces</button>
+<select id="spd" style="width:auto"><option value="1">1×</option><option value="10" selected>10×</option><option value="50">50×</option></select></div>
+<div id="errs"></div>
+<small>Subset acceptat: tipuri întregi (cu depășire pe 16 biți ca pe Uno), float, tablouri, if/for/while/switch, funcții, #define, ISR(TIMER1_COMPA_vect), attachInterrupt, millis, Serial. Nu există clase, pointeri, String sau biblioteci.</small>
+</div>
+<div class="card"><h3>Monitor serial (9600)</h3><pre class="code" id="ser"></pre>
+<div class="inl" style="margin-top:6px"><input type="text" id="sin" placeholder="ex: SP=38.5 sau 42" style="flex:1"><button class="b" id="ssend">Trimite</button><button class="b n" id="sclr">Șterge</button></div></div>
+</div>
+<div>
+<div class="card"><h3>Placa virtuală și procesul</h3>
+<canvas id="trend" width="640" height="250"></canvas>
+<div class="kv" id="b_out"></div>
+<div class="row"><label>Referință afișată (linie punctată) <b id="v_ref"></b></label><input id="ref" type="range" min="25" max="60" step="0.5" value="40"></div>
+<div class="row"><label>Potențiometru pe A1 <b id="v_pot"></b></label><input id="pot" type="range" min="0" max="1" step="0.01" value="0.5"></div>
+<div class="row"><label>Zgomot senzor (σ °C) <b id="v_bn"></b></label><input id="bn" type="range" min="0" max="1.5" step="0.05" value="0.15"></div>
+<div class="row"><label>Temperatura mediului <b id="v_ta"></b></label><input id="ta" type="range" min="0" max="35" step="1" value="20"></div>
+<div class="inl"><span class="btnpin" id="b2">Buton D2</span><span class="btnpin" id="b3">Buton D3</span><label class="inl" style="margin-left:6px"><input type="checkbox" id="bounce" checked> contact cu săritură (bounce)</label></div>
+<small>Cablaj virtual: A0 = LM35, A1 = potențiometru, A2 = NTC 10 kΩ, D8 = releu încălzitor (ON/OFF), D9 = MOSFET încălzitor (PWM), D13 = LED, D2/D3 = butoane către GND (INPUT_PULLUP). Procesul: T′ = (45·u − (T − Tamb)) / 120 s.</small>
+</div>
+</div></div>
+</section>
+
+<!-- ============ 4. DESFĂȘURARE ============ -->
+<section id="t4">
+<div class="card"><h3>Obiectivele lucrării</h3>
+<ul><li>Structura unui program Arduino (setup/loop), tipuri de date și depășirea intervalului.</li>
+<li>Temporizare fără blocare cu <code>millis()</code> versus <code>delay()</code>.</li>
+<li>Citirea senzorilor analogici (LM35, NTC), rezoluția ADC, zgomot și mediere.</li>
+<li>Întreruperi: Timer1 în mod CTC și întreruperea externă INT0, cu antirevenire (debounce).</li>
+<li>Reglarea temperaturii: ON/OFF cu histerezis, P, PI; efectul perioadei de eșantionare.</li></ul></div>
+
+<div class="card"><h3>A. Pe simulator (tab 1–3)</h3>
+<ol>
+<li><b>Timer1.</b> Calculați OCR1A pentru o întrerupere la 100 Hz, apoi la 1 Hz. Ce divizor se poate folosi la 1 Hz și de ce nu merge divizorul 1? Notați și eroarea de frecvență pentru 440 Hz.</li>
+<li><b>PWM.</b> Ce valoare analogWrite dă o tensiune medie de 1,25 V? Dar un factor de umplere de 30 %?</li>
+<li><b>ADC.</b> Cu LM35 și referință de 5 V, care e pasul de cuantizare în °C? Schimbați la 1,1 V și comparați. Cu ce număr de eșantioane mediate scade zgomotul de 0,3 °C sub 0,1 °C? (Verificați și teoretic: σ/√N.)</li>
+<li><b>NTC.</b> Observați că sensibilitatea (°C pe pas ADC) variază cu temperatura. Unde este cea mai bună rezoluție?</li>
+<li><b>Capcane.</b> Încărcați exemplul „Capcane de tip” și explicați fiecare valoare tipărită (depășire int, diviziune întreagă, ordinea operațiilor).</li>
+<li><b>Histerezis.</b> Rulați „Termostat ON/OFF” cu banda 2 °C, apoi 0,5 °C. Câte comutări ale releului au loc în 10 minute simulate? De ce contează pentru un releu mecanic?</li>
+<li><b>Regulatoare.</b> Comparați „Regulator P” cu „Regulator PI”: eroarea staționară, suprareglajul, timpul de intrare în bandă de ±0,5 °C. Creșteți zgomotul senzorului și observați comanda.</li>
+<li><b>Întreruperi.</b> Rulați „Buton cu întrerupere”: apăsați un buton cu bounce activ, apoi inactiv. Rulați varianta cu debounce prin <code>millis()</code>. Ce se întâmplă dacă ISR conține <code>delay()</code>?</li>
+</ol></div>
+
+<div class="card"><h3>B. Pe plăcuța Arduino Uno reală</h3>
+<p>Sketch-urile din dosarul <code>arduino/</code> se deschid în IDE Arduino 2.x (placa „Arduino Uno”). Cablaj: LM35 pe A0 (alimentat 5 V), NTC cu divizor pe A2, potențiometru pe A1, buton între D2 și GND, releu/MOSFET/LED pe D8/D9/D13.</p>
+<table><tr><th>Fișier</th><th>Ce demonstrează</th></tr>
+<tr><td>01_millis_blink</td><td>LED fără delay(), mai multe sarcini în paralel</td></tr>
+<tr><td>02_citire_senzori</td><td>LM35 și NTC, mediere, filtru exponențial, afișare serială</td></tr>
+<tr><td>03_termostat_histerezis</td><td>ON/OFF cu histerezis și timp minim între comutări</td></tr>
+<tr><td>04_timer1_ctc</td><td>ISR la 1 Hz cu Timer1, eșantionare periodică exactă</td></tr>
+<tr><td>05_int0_debounce</td><td>Întrerupere externă cu antirevenire</td></tr>
+<tr><td>06_regulator_pi</td><td>PI cu limitare și anti-windup, comenzi seriale <code>SP=38.5</code>, telemetrie CSV</td></tr>
+<tr><td>07_rtu_regulator</td><td>Legătura cu Lucrarea 2: expune T și SP prin registre Modbus RTU</td></tr></table>
+<p class="mut">Măsurători cerute: temperatura de pornire/oprire a releului cu un briceag de apă caldă sau cu degetul pe LM35; răspunsul la treaptă cu PWM fix; comparația LM35/NTC/DS18B20 (dacă este disponibil) pe aceeași temperatură.</p></div>
+
+<div class="card"><h3>Întrebări</h3>
+<ol><li>De ce <code>delay(1000)</code> este nepotrivit într-un regulator care mai are și alte sarcini?</li>
+<li>Ce variabile trebuie declarate <code>volatile</code> și de ce? Când trebuie dezactivate întreruperile la citirea unei variabile pe 16 biți?</li>
+<li>Cum alegeți perioada de eșantionare pentru un proces cu constanta de timp de 120 s?</li>
+<li>Ce este fenomenul de windup al componentei integrale și cum se evită?</li>
+<li>De ce nu se comandă un releu mecanic cu PWM de 490 Hz?</li></ol></div>
+
+<div class="card"><h3>Referat</h3>
+<div class="row"><label>Nume și prenume / grupa</label><input type="text" id="r_nm"></div>
+<div class="row"><label>Rezultatele exercițiilor A1–A8 (valori, observații)</label><textarea id="r_a" rows="8"></textarea></div>
+<div class="row"><label>Măsurători pe Arduino real și concluzii</label><textarea id="r_b" rows="5"></textarea></div>
+<button class="b" id="dl">Descarcă referatul (.txt, cu sketch-ul curent)</button></div>
+</section>
+</main>
+<script src="arduino.js"></script>
+<script src="tools.js"></script>
+</body></html>

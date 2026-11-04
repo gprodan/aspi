@@ -52,7 +52,7 @@ a.dl{color:var(--ac)}
 <header><div class="wrap">
 <a href="../../">← Laboratoare</a>
 <h1>Lucrarea 2 – PLC, RTU și Modbus</h1>
-<p>Programare în STL/Ladder (stil Siemens S7), nod RTU cu Arduino Uno și comunicație Modbus. Procesul rămâne fermentatorul de biogaz din lucrarea 1.</p>
+<p>Programare în SCL și Ladder (TIA Portal, S7-1200), nod RTU cu Arduino Uno și comunicație Modbus. Procesul rămâne fermentatorul de biogaz din lucrarea 1.</p>
 </div></header>
 <main class="wrap">
 
@@ -61,7 +61,7 @@ a.dl{color:var(--ac)}
 </div>
 
 <div class="tabs" id="tabs">
- <button data-t="plc" class="on">1. PLC: STL și Ladder</button>
+ <button data-t="plc" class="on">1. PLC: SCL și Ladder</button>
  <button data-t="mb">2. Modbus RTU: cadre și registre</button>
  <button data-t="sys">3. Sistemul integrat</button>
  <button data-t="lab">4. Desfășurarea lucrării</button>
@@ -71,13 +71,20 @@ a.dl{color:var(--ac)}
 <div class="tab on" id="t-plc">
 <div class="g2">
  <div class="card">
-  <h2>Program STL (rețele)</h2>
+  <h2>Program SCL (TIA Portal, S7-1200)</h2>
   <div class="row"><select id="exSel"></select><button class="b" id="exLoad">Încarcă exercițiul</button></div>
-  <textarea class="code" id="stl" spellcheck="false"></textarea>
+  <textarea class="code" id="scl" spellcheck="false"></textarea>
   <div class="row"><button class="b pri" id="btnRun">▶ RUN</button><button class="b bad" id="btnStop">■ STOP</button><button class="b" id="btnCompile">Compilează</button>
    <span class="mut" id="scanInfo"></span></div>
   <div class="err" id="errs"></div>
-  <div class="mut">Instrucțiuni: A, AN, O, ON, A(, O(, ), =, S, R, L, T, +I, −I, comparații (==I, &lt;&gt;I, &gt;I, &lt;I, &gt;=I, &lt;=I), temporizator pornire întârziată: L S5T#3S / SD T1. Rețele separate prin linii NETWORK.</div>
+  <div class="mut">Subset SCL: atribuiri <code>:=</code>, IF/ELSIF/ELSE/END_IF, CASE/END_CASE, operatori AND OR XOR NOT, comparații, + − * / MOD, funcții ABS MIN MAX LIMIT și conversii (INT_TO_REAL ...), temporizatoare <code>"TON_1"(IN := ..., PT := T#3s);</code> cu <code>.Q</code> și <code>.ET</code> (nume care încep cu TON_ sau TOF_). Variabile: simboluri între ghilimele din tabelul de mai jos, adrese absolute (%I0.0, %Q0.1, %MW10) sau variabile locale noi (create automat). Diviziunea este reală, nu întreagă ca în S7.</div>
+  <table class="m" style="margin-top:8px"><tr><th>Simbol</th><th>Adresă</th><th>Simbol</th><th>Adresă</th></tr>
+   <tr><td>"START"</td><td>%I0.0</td><td>"Incalzitor"</td><td>%Q0.0</td></tr>
+   <tr><td>"STOP" (NC)</td><td>%I0.1</td><td>"Pompa"</td><td>%Q0.1</td></tr>
+   <tr><td>"Intrare_libera"</td><td>%I0.2</td><td>"Alarma"</td><td>%Q0.2</td></tr>
+   <tr><td>"Ack"</td><td>%I0.3</td><td>"Termostat" / "Watchdog_RTU"</td><td>%M1.0 / %M1.1</td></tr>
+   <tr><td>"Temp_x10"</td><td>%MW10</td><td>"COMM_OK"</td><td>%M2.0</td></tr>
+   <tr><td>"Debit_x10"</td><td>%MW11</td><td>"Consemn_x10"</td><td>%MW12</td></tr></table>
  </div>
  <div>
   <div class="card">
@@ -99,8 +106,8 @@ a.dl{color:var(--ac)}
   </div>
  </div>
 </div>
-<div class="card"><h2>Vedere Ladder (generată din STL, cu fluxul de energie)</h2><div class="ladder" id="ladder"></div>
-<div class="mut">Verde = contact închis / bobină activă. Aceeași logică, două reprezentări: așa se transformă STL în Ladder și invers. Pe S7-1215C real se programează în Ladder sau SCL; STL există doar pe S7-300/400.</div></div>
+<div class="card"><h2>Vedere Ladder (generată din atribuirile booleene, cu fluxul de energie)</h2><div class="ladder" id="ladder"></div>
+<div class="mut">Verde = contact închis / bobină activă. Aceeași logică, două reprezentări: o atribuire booleană SCL (AND = contacte în serie, OR = în paralel, NOT = contact NC) este un rung Ladder. Pe S7-1215C real se programează în LAD, FBD sau SCL; STL există doar pe S7-300/400.</div></div>
 </div>
 
 <!-- ================= TAB 2 ================= -->
@@ -166,14 +173,15 @@ a.dl{color:var(--ac)}
 <div class="card"><h2>Desfășurarea lucrării (2 × 2 ore)</h2>
 <h3 style="margin:6px 0">Partea A – PLC (ședința 1)</h3>
 <ol class="ex">
-<li>Încărcați „1. Pornire/oprire cu automenținere”. Rulați, acționați START/STOP și observați Ladder-ul. Modificați programul astfel încât pompa să pornească doar dacă termostatul de siguranță nu e declanșat.</li>
+<li>Încărcați „1. Pornire/oprire cu automenținere”. Rulați, acționați START/STOP și observați Ladder-ul. Modificați programul astfel încât pompa să pornească doar dacă termostatul de siguranță ("Termostat") nu e declanșat.</li>
 <li>„2. Temporizator”: pompa pornește la 3 s după START. Ce se întâmplă dacă START e eliberat înainte de 3 s?</li>
-<li>„3. Termostat ON-OFF cu histerezis”: studiați cum S/R implementează histerezisul. Notați perioada de comutare și timpul în bandă. De ce se folosește M2.0?</li>
-<li>„4. Alarmă cu automenținere și confirmare”: scrieți și rețeaua de resetare. Aduceți temperatura peste 42 °C (reduceți temperatura exterioară nu ajută; creșteți consemnul la 44 °C).</li>
-<li>Pe PLC-ul real (S7-1215C): rescrieți exercițiul 1 în Ladder și exercițiul 3 în SCL (TIA Portal). Comparați cu STL-ul din simulator.</li>
+<li>„3. Termostat ON-OFF cu histerezis”: studiați cum structura IF/ELSIF păstrează starea între limite (histerezis). Notați perioada de comutare și timpul în bandă. De ce se folosește COMM_OK?</li>
+<li>„4. Alarmă cu automenținere și confirmare”: verificați memorarea alarmei și confirmarea. Aduceți temperatura peste 42 °C (creșteți consemnul la 44 °C). Modificați programul ca alarma să nu se reactiveze cât timp Ack este apăsat.</li>
+<li>„5. Secvență cu CASE”: urmăriți stările 0–3. De ce este apelat temporizatorul în afara CASE? Ce se întâmplă dacă îl mutați în starea 1?</li>
+<li>Pe PLC-ul real (S7-1215C): introduceți exercițiile 1–3 în TIA Portal în SCL, iar exercițiul 1 și în Ladder. Comparați cu vederea Ladder din simulator.</li>
 </ol>
 <h3 style="margin:6px 0">Partea B – RTU și Modbus (ședința 2)</h3>
-<ol class="ex" start="6">
+<ol class="ex" start="7">
 <li>Fila 2: construiți cereri pentru: citire T (30001), scriere consemn 40,0 °C, comandă încălzitor. Calculați manual CRC-ul pentru una dintre ele și comparați.</li>
 <li>Provocați excepții: adresă inexistentă, cantitate 0, funcție 43, valoare 700 în HR0. Ce cod primiți și de ce?</li>
 <li>Calculați timpul unei tranzacții la 9600 și 115200 baud; câte slave-uri pot fi interogate pe secundă?</li>
@@ -192,7 +200,7 @@ a.dl{color:var(--ac)}
 <div class="q">2. De ce este util watchdog-ul de comunicație și ce stare sigură ați ales pentru încălzitor?</div><textarea class="t" id="r2"></textarea>
 <div class="q">3. Ce rol are gateway-ul Modbus TCP→RTU și ce informații se pierd/se adaugă la conversie?</div><textarea class="t" id="r3"></textarea>
 <div class="q">4. Observații și concluzii.</div><textarea class="t" id="r4"></textarea>
-<div class="row"><button class="b pri" id="btnRep">Descarcă raportul (.txt)</button><span class="mut">Include programul STL, indicatorii, jurnalul și răspunsurile.</span></div>
+<div class="row"><button class="b pri" id="btnRep">Descarcă raportul (.txt)</button><span class="mut">Include programul SCL, indicatorii, jurnalul și răspunsurile.</span></div>
 </div>
 </div>
 
@@ -271,95 +279,152 @@ function transact(frame){ // frame = octeți RTU complet; returnează răspuns s
  return mbProcess(frame);
 }
 
-/* ================= PLC: parser STL ================= */
-const ADDR_BIT=/^[IQM]\d+\.[0-7]$/,ADDR_T=/^T\d+$/,ADDR_W=/^(MW|IW|QW)\d+$/,NUM=/^-?\d+$/;
-function parseSTL(src){
- const prog={nets:[],errors:[]};let net=null;
- const err=(n,m)=>prog.errors.push('Linia '+n+': '+m);
- function newNet(t){net={title:t,stmts:[],run:[],cur:null,stack:[],preset:null,last:null};prog.nets.push(net);}
- function flush(){if(net.run.length){net.stmts.push({kind:'word',ins:net.run});net.run=[];}}
- function ex(){return {groups:[[]]};}
- function addLeaf(op,leaf,n){
-  if(!net.cur){flush();net.cur=ex();net.last=null;}
-  const g=net.cur.groups;
-  if(op==='A'){g[g.length-1].push(leaf);}
-  else{if(g[g.length-1].length===0)g[g.length-1].push(leaf);else g.push([leaf]);}
+/* ================= PLC: SCL (subset) ================= */
+const PLC={run:false,prog:null,B:{},W:{MW12:380},TM:{},L:{},ins:{'I0.0':0,'I0.1':1,'I0.2':0,'I0.3':0},cyc:0,fail:0};
+const TAGS={START:'I0.0',STOP:'I0.1',Intrare_libera:'I0.2',Ack:'I0.3',Incalzitor:'Q0.0',Pompa:'Q0.1',Alarma:'Q0.2',Termostat:'M1.0',Watchdog_RTU:'M1.1',COMM_OK:'M2.0',Temp_x10:'MW10',Debit_x10:'MW11',Consemn_x10:'MW12'};
+const KW=['IF','THEN','ELSIF','ELSE','END_IF','CASE','OF','END_CASE','AND','OR','XOR','NOT','MOD','TRUE','FALSE'];
+const FNS=['ABS','MIN','MAX','LIMIT','TO_REAL','TO_INT','TO_BOOL'];
+const isBitKey=k=>/^[IQM]\d+\.[0-7]$/.test(k),isWordKey=k=>/^(MW|IW|QW)\d+$/.test(k);
+function tokenize(src,errs){
+ const T=[];let i=0,line=1;const n=src.length;
+ while(i<n){const ch=src[i];
+  if(ch==='\n'){line++;i++;continue;}
+  if(/\s/.test(ch)){i++;continue;}
+  if(ch==='/'&&src[i+1]==='/'){while(i<n&&src[i]!=='\n')i++;continue;}
+  if(ch==='('&&src[i+1]==='*'){const e=src.indexOf('*)',i+2);const seg=src.slice(i,e<0?n:e+2);line+=(seg.match(/\n/g)||[]).length;i=e<0?n:e+2;continue;}
+  if(ch==='"'){const e=src.indexOf('"',i+1);if(e<0){errs.push('Linia '+line+': ghilimele neînchise');break;}T.push({t:'tag',v:src.slice(i+1,e),line});i=e+1;continue;}
+  const rest=src.slice(i,i+40);let m;
+  if((m=rest.match(/^%([IQM]\d+\.[0-7]|MW\d+|IW\d+|QW\d+)/i))){T.push({t:'abs',v:m[1].toUpperCase(),line});i+=m[0].length;continue;}
+  if((m=rest.match(/^T#(\d+)(ms|s|m)\b/i))){const u=m[2].toLowerCase();T.push({t:'num',v:+m[1]*(u==='ms'?1:u==='s'?1000:60000),line});i+=m[0].length;continue;}
+  if((m=rest.match(/^\d+\.\d+/))){T.push({t:'num',v:parseFloat(m[0]),line});i+=m[0].length;continue;}
+  if((m=rest.match(/^\d+/))){T.push({t:'num',v:parseInt(m[0],10),line});i+=m[0].length;continue;}
+  if((m=rest.match(/^[A-Za-z_][A-Za-z_0-9]*/))){const u=m[0].toUpperCase();T.push(KW.includes(u)?{t:'kw',v:u,line}:{t:'id',v:m[0],line});i+=m[0].length;continue;}
+  if((m=rest.match(/^(:=|=>|<=|>=|<>|[=<>+\-*\/(),;:.])/))){T.push({t:'op',v:m[0],line});i+=m[0].length;continue;}
+  errs.push('Linia '+line+': caracter necunoscut „'+ch+'” (adresele absolute se scriu %I0.0, %Q0.1, %MW10)');i++;
  }
- src.split('\n').forEach((raw,i)=>{
-  const n=i+1;let line=raw.replace(/\/\/.*$/,'').trim();if(!line)return;
-  if(/^NETWORK/i.test(line)){if(net){if(net.cur)err(n,'rețea anterioară fără ieșire (=, S, R, SD)');flush();}newNet(line.replace(/^NETWORK\s*\d*\s*:?\s*/i,''));return;}
-  if(!net)newNet('');
-  line=line.replace(/^(AN?|ON?|XN?)\s+\(/i,'$1(');
-  const m=line.match(/^(\S+)\s*(.*)$/);let op=m[1].toUpperCase(),opd=m[2].replace(/\s+/g,'').toUpperCase();
-  if(/^[IQM]$/.test(opd.charAt(0))&&false){}
-  switch(op){
-  case 'A':case 'AN':case 'O':case 'ON':{
-   if(!(ADDR_BIT.test(opd)||ADDR_T.test(opd))){err(n,'operand invalid pentru '+op+': '+(opd||'(gol)'));break;}
-   addLeaf(op[0],{addr:opd,neg:op.length===2},n);break;}
-  case 'A(':case 'O(':case 'AN(':case 'ON(':{
-   if(!net.cur){flush();net.cur=ex();net.last=null;}
-   net.stack.push({expr:net.cur,join:op[0],neg:op.length===3});net.cur=ex();break;}
-  case ')':{
-   if(!net.stack.length){err(n,') fără paranteză deschisă');break;}
-   const c=net.stack.pop(),sub=net.cur;net.cur=c.expr;const g=net.cur.groups;
-   const node={sub,neg:c.neg};
-   if(c.join==='A')g[g.length-1].push(node);else{if(g[g.length-1].length===0)g[g.length-1].push(node);else g.push([node]);}break;}
-  case 'L':{
-   const mm=opd.match(/^S5T#(\d+)(MS|S|M)$/);
-   if(mm){net.preset=(+mm[1])*(mm[2]==='MS'?1:mm[2]==='S'?1000:60000);break;}
-   if(!(ADDR_W.test(opd)||NUM.test(opd))){err(n,'operand invalid pentru L: '+opd);break;}
-   net.run.push({op:'L',a:opd});break;}
-  case 'T':{if(!ADDR_W.test(opd)){err(n,'operand invalid pentru T: '+opd);break;}net.run.push({op:'T',a:opd});break;}
-  case '+I':case '-I':net.run.push({op});break;
-  case '==I':case '<>I':case '>I':case '<I':case '>=I':case '<=I':{
-   const r=net.run,l1=r[r.length-1],l2=r[r.length-2];
-   if(!(l1&&l2&&l1.op==='L'&&l2.op==='L')){err(n,'comparația '+op+' cere două instrucțiuni L imediat înainte');break;}
-   r.pop();r.pop();flush();
-   if(net.cur&&net.cur.groups[0].length&&!net.stack.length){err(n,'comparația începe o rețea nouă; închideți rețeaua anterioară cu =, S sau R');}
-   if(!net.cur){net.cur=ex();net.last=null;}
-   const g=net.cur.groups;const leaf={cmp:{a:l2.a,b:l1.a,op:op.slice(0,-1)}};
-   g[g.length-1].push(leaf);
-   break;}
-  case '=':case 'S':case 'R':case 'SD':{
-   if(op==='SD'){if(!ADDR_T.test(opd)){err(n,'SD cere un temporizator (T1, T2...)');break;}if(net.preset==null){err(n,'SD fără L S5T#... înainte');break;}}
-   else if(!ADDR_BIT.test(opd)||/^I/.test(opd)){err(n,'operand invalid pentru '+op+': '+opd);break;}
-   if(net.stack.length){err(n,'paranteze neînchise');net.stack=[];}
-   let st;
-   if(net.cur){st={kind:'logic',expr:net.cur,outs:[]};net.stmts.push(st);net.last=st;net.cur=null;}
-   else if(net.last)st=net.last;else{err(n,op+' fără condiție logică');break;}
-   st.outs.push(op==='SD'?{k:'SD',t:opd,pre:net.preset}:{k:op,addr:opd});break;}
-  default:err(n,'instrucțiune necunoscută: '+op);
-  }
- });
- if(net){if(net.cur)prog.errors.push('Ultima rețea nu are ieșire (=, S, R, SD)');flush();}
+ return T;
+}
+function parseSCL(src){
+ const errs=[];const T=tokenize(src,errs);let p=0;const prog={stmts:[],errors:errs,ladder:[]};
+ if(errs.length)return prog;
+ const pk=()=>T[p],eof=()=>p>=T.length;
+ const fail=(m,t)=>{const tt=t||pk()||T[T.length-1]||{line:1};throw {m:'Linia '+tt.line+': '+m};};
+ const isOp=v=>pk()&&pk().t==='op'&&pk().v===v,isKw=v=>pk()&&pk().t==='kw'&&pk().v===v;
+ const found=()=>pk()?' dar s-a găsit „'+pk().v+'”':' la sfârșitul programului';
+ const eatOp=v=>{if(!isOp(v))fail('se aștepta „'+v+'”'+found());return T[p++];};
+ const eatKw=v=>{if(!isKw(v))fail('se aștepta '+v+found());return T[p++];};
+ function ref(){const t=T[p++];if(!t||!['tag','abs','id'].includes(t.t))fail('se aștepta o variabilă',t);
+  const key=t.t==='abs'?t.v:(TAGS[t.v]||('L:'+t.v));let member=null;
+  if(isOp('.')&&T[p+1]&&T[p+1].t==='id'){p++;member=T[p++].v.toUpperCase();}
+  return {name:t.v,key,member,line:t.line};}
+ function primary(){const t=pk();if(!t)fail('expresie incompletă');
+  if(t.t==='num'){p++;return {k:'num',v:t.v};}
+  if(t.t==='kw'&&(t.v==='TRUE'||t.v==='FALSE')){p++;return {k:'bool',v:t.v==='TRUE'};}
+  if(isOp('(')){p++;const e=expr();eatOp(')');return e;}
+  if(t.t==='id'&&T[p+1]&&T[p+1].t==='op'&&T[p+1].v==='('){
+   const name=t.v.toUpperCase();p+=2;const args=[];
+   if(!isOp(')')){do{args.push(expr());}while(isOp(',')&&p++);}
+   eatOp(')');
+   const conv=/^[A-Z0-9]+_TO_([A-Z0-9]+)$/.exec(name);
+   if(!FNS.includes(name)&&!conv)fail('funcție necunoscută: '+t.v,t);
+   return {k:'fn',name,args};}
+  if(['tag','abs','id'].includes(t.t)){const r=ref();return {k:'var',...r};}
+  fail('expresie neașteptată „'+t.v+'”');}
+ function unary(){if(isKw('NOT')){p++;return {k:'not',e:unary()};}if(isOp('-')){p++;return {k:'neg',e:unary()};}return primary();}
+ const lvl=(sub,ops)=>function f(){let l=sub();while(pk()&&(pk().t==='op'||pk().t==='kw')&&ops.includes(pk().v)){const o=T[p++].v;const r=sub();l={k:'bin',op:o,l,r};}return l;};
+ const mul=lvl(unary,['*','/','MOD']),add=lvl(mul,['+','-']),rel=lvl(add,['<','>','<=','>=']),eq=lvl(rel,['=','<>']),and=lvl(eq,['AND']),xor=lvl(and,['XOR']),or=lvl(xor,['OR']);
+ function expr(){return or();}
+ function stmts(){const out=[];while(!eof()){const t=pk();if(t.t==='kw'&&['END_IF','ELSIF','ELSE','END_CASE'].includes(t.v))break;if(t.t==='num')break;out.push(stmt());}return out;}
+ function stmt(){
+  const t=pk();
+  if(isKw('IF')){p++;const br=[];let c=expr();eatKw('THEN');br.push({c,b:stmts()});let els=null;
+   while(isKw('ELSIF')){p++;c=expr();eatKw('THEN');br.push({c,b:stmts()});}
+   if(isKw('ELSE')){p++;els=stmts();}
+   eatKw('END_IF');eatOp(';');return {k:'if',br,els};}
+  if(isKw('CASE')){p++;const e=expr();eatKw('OF');const cs=[];let els=null;
+   while(pk()&&pk().t==='num'){const l=[];do{const n=T[p++];if(!n||n.t!=='num')fail('etichetă de CASE invalidă',n);l.push(n.v);}while(isOp(',')&&p++);eatOp(':');cs.push({l,b:stmts()});}
+   if(isKw('ELSE')){p++;els=stmts();}
+   eatKw('END_CASE');eatOp(';');return {k:'case',e,cs,els};}
+  if(t&&['tag','abs','id'].includes(t.t)){
+   const r=ref();
+   if(isOp(':=')){p++;const e=expr();eatOp(';');
+    if(r.member)fail('nu se poate atribui membrul .'+r.member,t);
+    if(/^I/.test(r.key)&&!r.key.startsWith('L:'))fail('intrările nu pot fi scrise: '+t.v,t);
+    return {k:'asg',tgt:r,e,line:t.line};}
+   if(isOp('(')){p++;
+    if(!/^(TON|TOF)/i.test(r.name))fail('instanța temporizatorului trebuie să înceapă cu TON_ sau TOF_',t);
+    const args={},outs=[];
+    if(!isOp(')')){do{const a=T[p++];if(!a||a.t!=='id')fail('parametru invalid',a);const pn=a.v.toUpperCase();
+      if(isOp(':=')){p++;args[pn]=expr();}else if(isOp('=>')){p++;outs.push({p:pn,ref:ref()});}else fail('se aștepta := sau =>'+found());
+     }while(isOp(',')&&p++);}
+    eatOp(')');eatOp(';');if(!args.IN)fail('lipsește parametrul IN',t);if(!args.PT)fail('lipsește parametrul PT',t);
+    return {k:'call',inst:r.name,args,outs};}
+   fail('se aștepta := sau ( după „'+t.v+'”'+found(),t);}
+  fail('instrucțiune neașteptată „'+(t?t.v:'')+'”');}
+ try{
+  prog.stmts=stmts();
+  if(!eof())fail('construcție neașteptată „'+pk().v+'”');
+ }catch(e){if(e.m)errs.push(e.m);else throw e;}
+ if(!errs.length)prog.ladder=ladderOf(prog.stmts);
  return prog;
 }
-
-/* ================= PLC: execuție ================= */
-const PLC={run:false,prog:null,B:{},W:{MW12:380},T:{},scan:0,scanMs:50,ins:{'I0.0':0,'I0.1':1,'I0.2':0,'I0.3':0},cyc:0};
-function rb(a){if(ADDR_T.test(a))return PLC.T[a]?PLC.T[a].q:0;if(a[0]==='I')return PLC.ins[a]||0;return PLC.B[a]||0;}
-function rw(a){if(NUM.test(a))return +a;return PLC.W[a]||0;}
-function cmpv(c){const x=rw(c.a),y=rw(c.b);switch(c.op){case '==':return x===y;case '<>':return x!==y;case '>':return x>y;case '<':return x<y;case '>=':return x>=y;case '<=':return x<=y;}return false;}
-function evalNode(n){if(n.sub)return evalExpr(n.sub)!==!!n.neg;if(n.cmp)return cmpv(n.cmp);return (rb(n.addr)?1:0)!==(n.neg?1:0);}
-function evalExpr(e){return e.groups.some(g=>g.length&&g.every(evalNode));}
-function runWords(ins){let a1=0,a2=0;for(const i of ins){
- if(i.op==='L'){a2=a1;a1=rw(i.a);}else if(i.op==='T'){PLC.W[i.a]=a1;}
- else if(i.op==='+I'){a1=(a2+a1);}else if(i.op==='-I'){a1=(a2-a1);} }}
+/* evaluare */
+function readKey(k){if(isBitKey(k))return k[0]==='I'?!!PLC.ins[k]:!!PLC.B[k];if(isWordKey(k))return PLC.W[k]||0;const v=PLC.L[k];return v===undefined?0:v;}
+function writeKey(k,v){if(isBitKey(k))PLC.B[k]=v?1:0;else if(isWordKey(k))PLC.W[k]=Math.trunc(Number(v))||0;else PLC.L[k]=v;}
+function ev(a){switch(a.k){
+ case 'num':case 'bool':return a.v;
+ case 'var':{if(a.member){const t=PLC.TM[a.name];return a.member==='Q'?!!(t&&t.q):(t?t.el:0);}return readKey(a.key);}
+ case 'not':return !ev(a.e);
+ case 'neg':return -Number(ev(a.e));
+ case 'fn':{const v=a.args.map(ev);const n=a.name;
+  if(n==='ABS')return Math.abs(v[0]);if(n==='MIN')return Math.min(...v);if(n==='MAX')return Math.max(...v);
+  if(n==='LIMIT')return Math.min(Math.max(v[1],v[0]),v[2]);
+  const m=/_TO_([A-Z0-9]+)$/.exec(n),tg=m?m[1]:n.replace('TO_','');
+  if(tg==='REAL'||tg==='LREAL')return Number(v[0]);if(tg==='BOOL')return !!v[0];return Math.round(Number(v[0]));}
+ case 'bin':{const o=a.op;
+  if(o==='AND')return !!ev(a.l)&&!!ev(a.r);if(o==='OR')return !!ev(a.l)||!!ev(a.r);if(o==='XOR')return !!ev(a.l)!==!!ev(a.r);
+  const l=ev(a.l),r=ev(a.r);
+  switch(o){case '=':return l==r;case '<>':return l!=r;case '<':return l<r;case '>':return l>r;case '<=':return l<=r;case '>=':return l>=r;
+   case '+':return Number(l)+Number(r);case '-':return Number(l)-Number(r);case '*':return Number(l)*Number(r);
+   case '/':return Number(r)===0?0:Number(l)/Number(r);case 'MOD':return Number(r)===0?0:Number(l)%Number(r);}}
+ }return 0;}
+function exec(list,dt){for(const s of list){switch(s.k){
+ case 'asg':writeKey(s.tgt.key,ev(s.e));break;
+ case 'if':{let done=false;for(const b of s.br){if(ev(b.c)){exec(b.b,dt);done=true;break;}}if(!done&&s.els)exec(s.els,dt);break;}
+ case 'case':{const v=Number(ev(s.e));let hit=false;for(const c of s.cs){if(c.l.includes(v)){exec(c.b,dt);hit=true;break;}}if(!hit&&s.els)exec(s.els,dt);break;}
+ case 'call':{const t=PLC.TM[s.inst]||(PLC.TM[s.inst]={el:0,q:0,pt:0,tof:/^TOF/i.test(s.inst)});
+  const IN=!!ev(s.args.IN),PT=Number(ev(s.args.PT));t.pt=PT;
+  if(!t.tof){if(IN){t.el=Math.min(PT,t.el+dt);t.q=t.el>=PT?1:0;}else{t.el=0;t.q=0;}}
+  else{if(IN){t.q=1;t.el=0;}else if(t.q){t.el+=dt;if(t.el>=PT){t.q=0;t.el=PT;}}}
+  for(const o of s.outs)writeKey(o.ref.key,o.p==='Q'?!!t.q:t.el);break;}
+}}}
+/* text pentru etichete Ladder */
+function txt(a){switch(a.k){case 'num':return String(a.v);case 'bool':return a.v?'TRUE':'FALSE';case 'var':return a.name+(a.member?'.'+a.member:'');case 'not':return 'NOT '+txt(a.e);case 'neg':return '-'+txt(a.e);
+ case 'fn':return a.name+'('+a.args.map(txt).join(',')+')';case 'bin':{const w=x=>x.k==='bin'&&x.op!==a.op?'('+txt(x)+')':txt(x);return w(a.l)+' '+a.op+' '+w(a.r);}}return '';}
+const CMP=['=','<>','<','>','<=','>='];
+const isCmp=a=>a.k==='bin'&&CMP.includes(a.op);
+function leafOf(a){
+ if(a.k==='var'&&!a.member||a.k==='var')return {label:a.name+(a.member?'.'+a.member:''),neg:false,get:()=>!!ev(a)};
+ if(a.k==='not'&&a.e.k==='var')return {label:a.e.name+(a.e.member?'.'+a.e.member:''),neg:true,get:()=>!ev(a.e)};
+ if(isCmp(a))return {cmp:true,label:txt(a),get:()=>!!ev(a)};
+ if(a.k==='not')return {sub:toExpr(a.e),neg:true,get:()=>!ev(a.e)};
+ return {sub:toExpr(a),neg:false,get:()=>!!ev(a)};}
+function flat(a,op){return a.k==='bin'&&a.op===op?[...flat(a.l,op),...flat(a.r,op)]:[a];}
+function toExpr(a){
+ if(a.k==='bin'&&a.op==='OR')return {groups:flat(a,'OR').map(o=>o.k==='bin'&&o.op==='AND'?flat(o,'AND').map(leafOf):[leafOf(o)])};
+ if(a.k==='bin'&&a.op==='AND')return {groups:[flat(a,'AND').map(leafOf)]};
+ return {groups:[[leafOf(a)]]};}
+function ladderOf(list){const out=[];
+ for(const s of list){if(s.k!=='asg')continue;const a=s.e;
+  const ok=(a.k==='bin'&&(['AND','OR',...CMP].includes(a.op)))||(a.k==='not');
+  if(!ok)continue;
+  out.push({title:s.tgt.name+' := '+txt(a),expr:toExpr(a),outs:[{k:'=',addr:s.tgt.name}]});}
+ return out;}
 function scanOnce(dt){
  if(!PLC.prog||PLC.prog.errors.length)return;
- for(const net of PLC.prog.nets)for(const st of net.stmts){
-  if(st.kind==='word'){runWords(st.ins);continue;}
-  const v=evalExpr(st.expr);
-  for(const o of st.outs){
-   if(o.k==='=')PLC.B[o.addr]=v?1:0;
-   else if(o.k==='S'){if(v)PLC.B[o.addr]=1;}
-   else if(o.k==='R'){if(v)PLC.B[o.addr]=0;}
-   else if(o.k==='SD'){const t=PLC.T[o.t]||(PLC.T[o.t]={el:0,q:0,pre:o.pre});t.pre=o.pre;
-     if(v){t.el=Math.min(t.pre,t.el+dt);t.q=t.el>=t.pre?1:0;}else{t.el=0;t.q=0;}}
-  }
- }
- PLC.cyc++;
+ exec(PLC.prog.stmts,dt);PLC.cyc++;
 }
+
 
 /* ===== MB_CLIENT ciclic (PLC -> gateway -> RTU) ===== */
 const TR=[];let trPaused=false;
@@ -384,71 +449,77 @@ function pollOnce(){
  else{S.fails++;PLC.fail=(PLC.fail||0)+1;if(PLC.fail>=2&&B['M2.0']!==0){B['M2.0']=0;S.lost++;log('PLC: pierdere comunicație cu RTU (COMM_OK = 0)','e');}}
 }
 
-/* ================= exerciții STL ================= */
+/* ================= exerciții SCL ================= */
 const EX=[
-{n:'1. Pornire/oprire cu automenținere (pompă)',s:`NETWORK 1: pompa cu automenținere
-      A(
-      O     I0.0        // START
-      O     Q0.1        // automenținere
-      )
-      A     I0.1        // STOP (contact NC: 1 = neapăsat)
-      =     Q0.1
+{n:'1. Pornire/oprire cu automenținere (pompă)',s:`// Pompa cu automenținere. STOP este contact NC: 1 = neapăsat.
+"Pompa" := ("START" OR "Pompa") AND "STOP";
 `},
-{n:'2. Temporizator pornire întârziată',s:`NETWORK 1: pompa pornește la 3 s după START
-      A     I0.0
-      L     S5T#3S
-      SD    T1
-NETWORK 2
-      A     T1
-      A     I0.1
-      =     Q0.1
+{n:'2. Temporizator TON (pornire întârziată)',s:`// Pompa pornește la 3 s după START
+"TON_1"(IN := "START", PT := T#3s);
+"Pompa" := "TON_1".Q AND "STOP";
 `},
-{n:'3. Termostat ON-OFF cu histerezis (încălzitor)',s:`NETWORK 1: limitele de comutare (x10 °C)
-      L     MW12        // consemn
-      L     5
-      -I
-      T     MW14        // limita de pornire = consemn - 0,5 °C
-      L     MW12
-      L     5
-      +I
-      T     MW15        // limita de oprire = consemn + 0,5 °C
-NETWORK 2: pornire încălzitor
-      L     MW10        // temperatura citită prin Modbus
-      L     MW14
-      <I
-      A     M2.0        // numai dacă comunicația e bună
-      S     Q0.0
-NETWORK 3: oprire încălzitor
-      L     MW10
-      L     MW15
-      >I
-      O     M1.0        // termostat de siguranță declanșat
-      ON    M2.0        // sau comunicație pierdută
-      R     Q0.0
+{n:'3. Termostat ON-OFF cu histerezis (încălzitor)',s:`// Temperatura și consemnul sunt în zecimi de grad (385 = 38,5 °C).
+// Histerezis ±0,5 °C = ±5 unități.
+IF "Temp_x10" < "Consemn_x10" - 5 AND "COMM_OK" THEN
+    "Incalzitor" := TRUE;
+ELSIF "Temp_x10" > "Consemn_x10" + 5 OR "Termostat" OR NOT "COMM_OK" THEN
+    "Incalzitor" := FALSE;
+END_IF;
 `},
-{n:'4. Alarmă temperatură mare cu confirmare',s:`NETWORK 1: apariție alarmă (T > 42,0 °C)
-      L     MW10
-      L     420
-      >I
-      S     M3.0
-NETWORK 2: confirmare operator (I0.3)
-      A     I0.3
-      R     M3.0
-NETWORK 3: lampă alarmă
-      A     M3.0
-      =     Q0.2
+{n:'4. Alarmă temperatură mare cu confirmare',s:`// Alarmă la T > 42,0 °C, memorată până la confirmarea operatorului (Ack = %I0.3)
+IF "Temp_x10" > 420 THEN
+    "Alarma_mem" := TRUE;
+END_IF;
+IF "Ack" THEN
+    "Alarma_mem" := FALSE;
+END_IF;
+"Alarma" := "Alarma_mem";
+`},
+{n:'5. Secvență cu CASE (mașină de stări)',s:`// 0 = repaus, 1 = umplere 5 s (pompă), 2 = încălzire, 3 = menținere
+// Temporizatorul se apelează în afara CASE, la fiecare ciclu.
+"TON_1"(IN := "Stare" = 1, PT := T#5s);
+
+CASE "Stare" OF
+    0:  "Pompa" := FALSE;
+        "Incalzitor" := FALSE;
+        IF "START" AND "STOP" THEN
+            "Stare" := 1;
+        END_IF;
+    1:  "Pompa" := TRUE;
+        IF "TON_1".Q THEN
+            "Stare" := 2;
+        END_IF;
+    2:  "Pompa" := FALSE;
+        "Incalzitor" := "COMM_OK";
+        IF "Temp_x10" >= "Consemn_x10" THEN
+            "Stare" := 3;
+        END_IF;
+    3:  IF "Temp_x10" < "Consemn_x10" - 5 THEN
+            "Incalzitor" := "COMM_OK";
+        ELSIF "Temp_x10" > "Consemn_x10" + 5 THEN
+            "Incalzitor" := FALSE;
+        END_IF;
+ELSE
+    "Stare" := 0;
+END_CASE;
+
+IF NOT "STOP" THEN
+    "Stare" := 0;
+    "Incalzitor" := FALSE;
+    "Pompa" := FALSE;
+END_IF;
 `}];
 $('exSel').innerHTML=EX.map((e,i)=>'<option value="'+i+'">'+e.n+'</option>').join('');
-function compile(){PLC.prog=parseSTL($('stl').value);$('errs').textContent=PLC.prog.errors.join('\n');drawLadder();return !PLC.prog.errors.length;}
-function loadEx(i){$('stl').value=EX[i].s;PLC.B={'M2.0':PLC.B['M2.0']||0};PLC.T={};PLC.W.MW12=+$('sp').value;compile();log('Încărcat: '+EX[i].n);}
+function compile(){PLC.prog=parseSCL($('scl').value);$('errs').textContent=PLC.prog.errors.join('\n');drawLadder();return !PLC.prog.errors.length;}
+function loadEx(i){$('scl').value=EX[i].s;PLC.B={'M2.0':PLC.B['M2.0']||0};PLC.TM={};PLC.L={};PLC.W.MW12=+$('sp').value;compile();log('Încărcat: '+EX[i].n);}
+
 
 /* ================= desen Ladder ================= */
 const LW=96,LH=46;
 function lay(e){let W=0,H=0;for(const g of e.groups){let gw=0,gh=LH;for(const n of g){const d=n.sub?lay(n.sub):{w:LW,h:LH};n.d=d;gw+=d.w;gh=Math.max(gh,d.h);}g.d={w:gw,h:gh};W=Math.max(W,gw);H+=gh;}e.d={w:W,h:H};return e.d;}
 function pw(e,pin){let out=false;for(const g of e.groups){let p=pin;for(const n of g){
-  if(n.sub){pw(n.sub,p);const v=evalExpr(n.sub);n.p=!!p&&(n.neg?!v:v);}
-  else if(n.cmp){n.p=!!p&&cmpv(n.cmp);}
-  else{const c=(rb(n.addr)?1:0)!==(n.neg?1:0);n.p=!!p&&!!c;}
+  if(n.sub){pw(n.sub,p);n.p=!!p&&!!n.get();}
+  else{n.p=!!p&&!!n.get();}
   p=n.p;}
   g.p=p;out=out||p;}e.pOut=out;return out;}
 function col(p){return p?'var(--ok)':'var(--wire)';}
@@ -463,14 +534,14 @@ function rn(e,x,y,W,pin){ // desenează expresia; returnează svg
    }else{
     const on=n.p;const px=cx;
     s+='<line x1="'+px+'" y1="'+by+'" x2="'+(px+LW)+'" y2="'+by+'" stroke="'+col(p)+'" stroke-width="2"/>';
-    if(n.cmp){const lab=n.cmp.a+' '+n.cmp.op+' '+n.cmp.b;
+    if(n.cmp){const lab=n.label;
      s+='<rect x="'+(px+6)+'" y="'+(by-14)+'" width="'+(LW-12)+'" height="28" rx="3" fill="var(--card)" stroke="'+col(on)+'" stroke-width="2"/><text x="'+(px+LW/2)+'" y="'+(by+4)+'" font-size="10.5" text-anchor="middle" fill="var(--tx)">'+lab+'</text>';
     }else{
      const cx1=px+LW/2-9,cx2=px+LW/2+9;
      s+='<rect x="'+(cx1-2)+'" y="'+(by-12)+'" width="'+(cx2-cx1+4)+'" height="24" fill="var(--svgbg)"/>';
      s+='<line x1="'+cx1+'" y1="'+(by-12)+'" x2="'+cx1+'" y2="'+(by+12)+'" stroke="'+col(on)+'" stroke-width="3"/><line x1="'+cx2+'" y1="'+(by-12)+'" x2="'+cx2+'" y2="'+(by+12)+'" stroke="'+col(on)+'" stroke-width="3"/>';
      if(n.neg)s+='<line x1="'+(cx1-2)+'" y1="'+(by+12)+'" x2="'+(cx2+2)+'" y2="'+(by-12)+'" stroke="'+col(on)+'" stroke-width="2"/>';
-     s+='<text x="'+(px+LW/2)+'" y="'+(by-17)+'" font-size="11" text-anchor="middle" fill="var(--tx)">'+n.addr+'</text>';
+     s+='<text x="'+(px+LW/2)+'" y="'+(by-17)+'" font-size="11" text-anchor="middle" fill="var(--tx)">'+n.label+'</text>';
     }
     p=on;
    }
@@ -483,25 +554,17 @@ function rn(e,x,y,W,pin){ // desenează expresia; returnează svg
  return {s,by:base[0]};
 }
 function drawLadder(){
- const box=$('ladder');if(!PLC.prog){box.innerHTML='';return;}
+ const box=$('ladder');
+ if(!PLC.prog||!PLC.prog.ladder||!PLC.prog.ladder.length){box.innerHTML='<div class="mut" style="padding:8px">Nicio atribuire booleană simplă în program (de forma bit := expresie cu AND / OR / NOT / comparații). Instrucțiunile IF, CASE și apelurile de temporizatoare nu se desenează în Ladder.</div>';return;}
  let html='';
- PLC.prog.nets.forEach((net,ni)=>{
-  let svg='',Y=0,maxW=0;const items=[];
-  net.stmts.forEach(st=>{
-   if(st.kind==='word'){const t=st.ins.map(i=>i.op+(i.a?' '+i.a:'')).join(' ; ');items.push({h:36,w:Math.min(900,t.length*6.4+30),draw:(y)=>'<rect x="10" y="'+(y+4)+'" width="'+Math.min(900,t.length*6.4+20)+'" height="28" rx="4" fill="var(--card)" stroke="var(--bd)"/><text x="18" y="'+(y+22)+'" font-size="11.5" fill="var(--mut)">'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</text>'});return;}
-   const d=lay(st.expr);const nOut=st.outs.length;const h=Math.max(d.h,nOut*LH);const W=d.w;
-   items.push({h:h+6,w:20+W+130,draw:(y)=>{
-    pw(st.expr,true);const v=st.expr.pOut;const r=rn(st.expr,20,y,W,true);let s2='<line x1="10" y1="'+(y+23)+'" x2="20" y2="'+(y+23)+'" stroke="var(--ok)" stroke-width="2"/>'+r.s;
-    const ox=20+W;st.outs.forEach((o,k)=>{const oy=y+k*LH+23;
-     s2+='<line x1="'+ox+'" y1="'+r.by+'" x2="'+(ox+14)+'" y2="'+r.by+'" stroke="'+col(v)+'" stroke-width="2"/>';
-     if(k>0)s2+='<line x1="'+(ox+14)+'" y1="'+r.by+'" x2="'+(ox+14)+'" y2="'+oy+'" stroke="'+col(v)+'" stroke-width="2"/>';
-     if(o.k==='SD'){s2+='<line x1="'+(ox+14)+'" y1="'+oy+'" x2="'+(ox+34)+'" y2="'+oy+'" stroke="'+col(v)+'" stroke-width="2"/><rect x="'+(ox+34)+'" y="'+(oy-20)+'" width="90" height="40" rx="4" fill="var(--card)" stroke="'+col(v)+'" stroke-width="2"/><text x="'+(ox+79)+'" y="'+(oy-4)+'" font-size="11" text-anchor="middle" fill="var(--tx)">SD '+o.t+'</text><text x="'+(ox+79)+'" y="'+(oy+12)+'" font-size="11" text-anchor="middle" fill="var(--mut)">PT '+(o.pre/1000)+' s</text>';}
-     else{const lbl=o.k==='='?'':o.k;s2+='<line x1="'+(ox+14)+'" y1="'+oy+'" x2="'+(ox+44)+'" y2="'+oy+'" stroke="'+col(v)+'" stroke-width="2"/><circle cx="'+(ox+54)+'" cy="'+oy+'" r="11" fill="'+(v?'var(--ok)':'var(--svgbg)')+'" fill-opacity="'+(v?0.35:1)+'" stroke="'+col(v)+'" stroke-width="2"/><text x="'+(ox+54)+'" y="'+(oy+4)+'" font-size="10" text-anchor="middle" fill="var(--tx)">'+lbl+'</text><text x="'+(ox+54)+'" y="'+(oy-16)+'" font-size="11" text-anchor="middle" fill="var(--tx)">'+o.addr+'</text>';}
-    });
-    return s2;}});
-  });
-  items.forEach(it=>{svg+=it.draw(Y);Y+=it.h;maxW=Math.max(maxW,it.w);});
-  html+='<div class="net"><div class="nt">Rețea '+(ni+1)+(net.title?': '+net.title:'')+'</div><svg width="'+(maxW+20)+'" height="'+(Y+20)+'" viewBox="0 0 '+(maxW+20)+' '+(Y+20)+'"><g transform="translate(0,14)"><line x1="10" y1="0" x2="10" y2="'+Y+'" stroke="var(--ok)" stroke-width="3"/>'+svg+'</g></svg></div>';
+ PLC.prog.ladder.forEach((it,ni)=>{
+  const d=lay(it.expr);const h=Math.max(d.h,it.outs.length*LH);
+  pw(it.expr,true);const v=it.expr.pOut;const r=rn(it.expr,20,0,d.w,true);
+  let s2='<line x1="10" y1="23" x2="20" y2="23" stroke="var(--ok)" stroke-width="2"/>'+r.s;const ox=20+d.w;
+  it.outs.forEach(o=>{const oy=23;
+   s2+='<line x1="'+ox+'" y1="'+r.by+'" x2="'+(ox+44)+'" y2="'+r.by+'" stroke="'+col(v)+'" stroke-width="2"/><circle cx="'+(ox+54)+'" cy="'+oy+'" r="11" fill="'+(v?'var(--ok)':'var(--svgbg)')+'" fill-opacity="'+(v?0.35:1)+'" stroke="'+col(v)+'" stroke-width="2"/><text x="'+(ox+54)+'" y="'+(oy-16)+'" font-size="11" text-anchor="middle" fill="var(--tx)">'+o.addr+'</text>';});
+  const W=20+d.w+130;
+  html+='<div class="net"><div class="nt">'+it.title.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div><svg width="'+(W+20)+'" height="'+(h+20)+'" viewBox="0 0 '+(W+20)+' '+(h+20)+'"><g transform="translate(0,14)"><line x1="10" y1="0" x2="10" y2="'+h+'" stroke="var(--ok)" stroke-width="3"/>'+s2+'</g></svg></div>';
  });
  box.innerHTML=html;
 }
@@ -598,16 +661,16 @@ function uiPLC(){
  const W=PLC.W,B=PLC.B;
  $('mem').innerHTML='<tr><th>Variabilă</th><th>Valoare</th><th>Variabilă</th><th>Valoare</th></tr>'+
  '<tr><td>MW10 temperatură ×10</td><td>'+(W.MW10||0)+'</td><td>MW11 debit ×10</td><td>'+(W.MW11||0)+'</td></tr>'+
- '<tr><td>MW12 consemn ×10</td><td>'+W.MW12+'</td><td>MW14 / MW15 limite</td><td>'+(W.MW14||0)+' / '+(W.MW15||0)+'</td></tr>'+
- '<tr><td>M1.0 termostat</td><td>'+(B['M1.0']||0)+'</td><td>M1.1 watchdog RTU</td><td>'+(B['M1.1']||0)+'</td></tr>'+
- '<tr><td>M3.0 alarmă memorată</td><td>'+(B['M3.0']||0)+'</td><td>T1 (el / preset)</td><td>'+(PLC.T.T1?(PLC.T.T1.el/1000).toFixed(1)+' / '+(PLC.T.T1.pre/1000)+' s':'–')+'</td></tr>';
+ '<tr><td>MW12 consemn ×10</td><td>'+W.MW12+'</td><td>M1.0 termostat / M1.1 watchdog</td><td>'+(B['M1.0']||0)+' / '+(B['M1.1']||0)+'</td></tr>'+
+ Object.keys(PLC.L).map(k=>'<tr><td>'+k.slice(2)+' (locală)</td><td colspan="3">'+String(PLC.L[k])+'</td></tr>').join('')+
+ Object.keys(PLC.TM).map(k=>'<tr><td>'+k+'</td><td colspan="3">Q='+PLC.TM[k].q+' · ET='+(PLC.TM[k].el/1000).toFixed(1)+' s / PT='+(PLC.TM[k].pt/1000)+' s</td></tr>').join('');
  $('scanInfo').textContent=(PLC.run?'RUN':'STOP')+' · cicluri: '+PLC.cyc;
  drawLadder();
 }
 $('sp').addEventListener('input',e=>{PLC.W.MW12=+e.target.value;$('spv').textContent=(PLC.W.MW12/10).toFixed(1).replace('.',',');});
 $('btnRun').addEventListener('click',()=>{if(compile()){PLC.run=true;log('PLC: RUN','g');}});
-$('btnStop').addEventListener('click',()=>{PLC.run=false;PLC.B={'M2.0':0};PLC.T={};log('PLC: STOP – ieșirile sunt dezactivate; nu se mai transmit cereri Modbus','w');});
-$('btnCompile').addEventListener('click',()=>{if(compile())log('Compilare reușită ('+PLC.prog.nets.length+' rețele)','g');});
+$('btnStop').addEventListener('click',()=>{PLC.run=false;PLC.B={'M2.0':0};PLC.TM={};PLC.L={};log('PLC: STOP – ieșirile sunt dezactivate; nu se mai transmit cereri Modbus','w');});
+$('btnCompile').addEventListener('click',()=>{if(compile())log('Compilare reușită ('+PLC.prog.stmts.length+' instrucțiuni de nivel superior)','g');});
 $('exLoad').addEventListener('click',()=>loadEx(+$('exSel').value));
 ['mFc','mAddr','mQty','mVals','mId','mBadCrc','mBadId','mBaud'].forEach(i=>$(i).addEventListener('input',mbUI));
 $('mSend').addEventListener('click',mbSend);
@@ -617,13 +680,13 @@ $('fRtu').addEventListener('change',e=>{F.rtu=+e.target.checked;log(F.rtu?'DEFEC
 document.querySelectorAll('input[name=mode]').forEach(r=>r.addEventListener('change',e=>{R.hr[2]=+e.target.value;log('Mod RTU: '+(R.hr[2]?'reglare locală (Arduino)':'comandat de PLC'),'w');}));
 $('spd').addEventListener('change',e=>SCALE=+e.target.value);
 $('ta').addEventListener('input',e=>{Ta=+e.target.value;R.hr[4]=Math.max(0,Ta*10);$('tav').textContent=Ta;});
-$('btnReset').addEventListener('click',()=>{resetProc();$('stl').value&&compile();log('Proces resetat','g');});
+$('btnReset').addEventListener('click',()=>{resetProc();$('scl').value&&compile();log('Proces resetat','g');});
 $('trPause').addEventListener('click',e=>{trPaused=!trPaused;e.target.textContent=trPaused?'Reia':'Pauză';});
 $('trClear').addEventListener('click',()=>{$('traf').innerHTML='';});
 $('btnRep').addEventListener('click',()=>{
  const t=['LUCRAREA 2 – PLC, RTU ȘI MODBUS','Student: '+$('stu').value,'Data: '+new Date().toLocaleString('ro-RO'),'',
  'INDICATORI','Timp simulat: '+(S.sim/3600).toFixed(1)+' h','Temperatură maximă: '+f1(S.maxT)+' °C','În bandă ±1,5 °C: '+(S.tot?(100*S.inb/S.tot).toFixed(1):0)+' %','Cicluri Modbus: '+S.polls+' (cu eroare: '+S.fails+')','Pierderi de comunicație PLC: '+S.lost,'',
- 'PROGRAM STL','',$('stl').value,'','JURNAL',...logArr,'','RĂSPUNSURI','1. '+$('r1').value,'','2. '+$('r2').value,'','3. '+$('r3').value,'','4. '+$('r4').value];
+ 'PROGRAM SCL','',$('scl').value,'','JURNAL',...logArr,'','RĂSPUNSURI','1. '+$('r1').value,'','2. '+$('r2').value,'','3. '+$('r3').value,'','4. '+$('r4').value];
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t.join('\n')],{type:'text/plain;charset=utf-8'}));a.download='raport_lab2.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);});
 
 /* ===== lanț (schemă) și trend ===== */
@@ -674,6 +737,6 @@ setInterval(()=>{uiPLC();chain();trend();topUI();if($('t-mb').classList.contains
 PLC.B['M2.0']=0;
 buildMys();loadEx(2);mbUI();regTable();
 log('Simulator pornit. Încărcat exercițiul 3; apăsați RUN.');
-window.__lab={S,R,PLC,F,parseSTL,mbProcess,crc16,compile,loadEx,pollOnce,scanOnce,procStep,describe};
+window.__lab={S,R,PLC,F,parseSCL,mbProcess,crc16,compile,loadEx,pollOnce,scanOnce,procStep,describe};
 })();
 </script></body></html>
