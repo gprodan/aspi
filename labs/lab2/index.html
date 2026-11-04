@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucrarea 2 – PLC, RTU și Modbus (simulator)</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--tx:#14202e;--mut:#5a6b7e;--ac:#1f6fd1;--bd:#dde4ec;--ok:#1e9e5a;--warn:#e08a00;--bad:#d23c3c;--svgbg:#eef3f9;--wire:#9aa8b8}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#1b2633;--tx:#e6edf3;--mut:#8b9bb0;--ac:#4aa3ff;--bd:#2c3b4e;--ok:#3ec47e;--warn:#f0a020;--bad:#ef5b5b;--svgbg:#162130;--wire:#5d6e82}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:linear-gradient(135deg,#16355c,#1f6fd1);color:#fff;padding:18px 16px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header a{color:#bfe0ff;font-size:13px;text-decoration:none}
+header h1{margin:6px 0 2px;font-size:clamp(20px,3.5vw,28px)}
+header p{margin:0;opacity:.85;font-size:14px}
+main{padding:14px 0 40px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+.card h2{margin:0 0 8px;font-size:17px}
+.mut{color:var(--mut);font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:9px;cursor:pointer;font:inherit;font-weight:600}
+.tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.tab{display:none}.tab.on{display:block}
+.g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
+@media(max-width:900px){.g2{grid-template-columns:1fr}}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:8px 0}
+button.b{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit;font-size:14px}
+button.b:hover{border-color:var(--ac)}button.b.pri{background:var(--ac);border-color:var(--ac);color:#fff}button.b.bad{background:var(--bad);border-color:var(--bad);color:#fff}
+select,input[type=text],input[type=number],textarea{background:var(--svgbg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font:inherit;font-size:14px}
+textarea.code{width:100%;height:440px;font:13px/1.45 ui-monospace,Consolas,monospace;resize:vertical;white-space:pre;tab-size:4}
+textarea.t{width:100%;min-height:64px;resize:vertical}
+label.ck{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
+.io{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
+.sw{display:flex;align-items:center;gap:8px;background:var(--svgbg);border-radius:8px;padding:6px 8px;font-size:13px;cursor:pointer;user-select:none}
+.led{width:14px;height:14px;border-radius:50%;background:var(--bd);border:1px solid var(--mut);flex:none}.led.on{background:var(--ok);border-color:var(--ok)}.led.on.r{background:var(--bad);border-color:var(--bad)}.led.on.o{background:var(--warn);border-color:var(--warn)}
+.tg{width:30px;height:16px;border-radius:9px;background:var(--bd);position:relative;flex:none}.tg:after{content:"";position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--mut);transition:.15s}.tg.on{background:var(--ok)}.tg.on:after{left:16px;background:#fff}
+.ladder{overflow:auto;background:var(--svgbg);border-radius:10px;padding:6px;max-height:520px}
+.ladder .net{margin-bottom:6px}.ladder .nt{font-size:12px;color:var(--mut);margin:2px 4px}
+.err{color:var(--bad);font:13px ui-monospace,Consolas,monospace;white-space:pre-wrap}
+table.m{width:100%;border-collapse:collapse;font-size:13.5px}
+table.m td,table.m th{padding:4px 6px;border-top:1px solid var(--bd);text-align:left;vertical-align:top}
+.hex{font:13.5px ui-monospace,Consolas,monospace;word-break:break-all;background:var(--svgbg);padding:6px 8px;border-radius:8px;margin:4px 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.kpi{background:var(--svgbg);border-radius:8px;padding:6px 10px}.kpi span{display:block;font-size:12px;color:var(--mut)}.kpi b{font-size:17px}
+canvas{width:100%;height:200px;background:var(--svgbg);border-radius:10px;display:block}
+#traf,#log{height:190px;overflow:auto;font:12.5px/1.4 ui-monospace,Consolas,monospace;background:var(--svgbg);border-radius:8px;padding:6px}
+#traf div,#log div{border-bottom:1px solid var(--bd);padding:1px 0}.w{color:var(--warn)}.e{color:var(--bad)}.g{color:var(--ok)}
+svg text{font-family:inherit}
+ol.ex{padding-left:20px}ol.ex li{margin:7px 0}
+.q{margin:10px 0 4px;font-weight:600;font-size:14px}
+a.dl{color:var(--ac)}
+</style></head><body>
+<header><div class="wrap">
+<a href="../../">← Laboratoare</a>
+<h1>Lucrarea 2 – PLC, RTU și Modbus</h1>
+<p>Programare în STL/Ladder (stil Siemens S7), nod RTU cu Arduino Uno și comunicație Modbus. Procesul rămâne fermentatorul de biogaz din lucrarea 1.</p>
+</div></header>
+<main class="wrap">
+
+<div class="card" style="padding:10px 14px">
+ <div class="kpis" id="top"></div>
+</div>
+
+<div class="tabs" id="tabs">
+ <button data-t="plc" class="on">1. PLC: STL și Ladder</button>
+ <button data-t="mb">2. Modbus RTU: cadre și registre</button>
+ <button data-t="sys">3. Sistemul integrat</button>
+ <button data-t="lab">4. Desfășurarea lucrării</button>
+</div>
+
+<!-- ================= TAB 1 ================= -->
+<div class="tab on" id="t-plc">
+<div class="g2">
+ <div class="card">
+  <h2>Program STL (rețele)</h2>
+  <div class="row"><select id="exSel"></select><button class="b" id="exLoad">Încarcă exercițiul</button></div>
+  <textarea class="code" id="stl" spellcheck="false"></textarea>
+  <div class="row"><button class="b pri" id="btnRun">▶ RUN</button><button class="b bad" id="btnStop">■ STOP</button><button class="b" id="btnCompile">Compilează</button>
+   <span class="mut" id="scanInfo"></span></div>
+  <div class="err" id="errs"></div>
+  <div class="mut">Instrucțiuni: A, AN, O, ON, A(, O(, ), =, S, R, L, T, +I, −I, comparații (==I, &lt;&gt;I, &gt;I, &lt;I, &gt;=I, &lt;=I), temporizator pornire întârziată: L S5T#3S / SD T1. Rețele separate prin linii NETWORK.</div>
+ </div>
+ <div>
+  <div class="card">
+   <h2>Intrări / ieșiri / memorie</h2>
+   <div class="io" id="ins"></div>
+   <div class="io" id="outs" style="margin-top:8px"></div>
+   <div class="row"><span>Consemn MW12: <b id="spv">38,0</b> °C</span><input type="range" id="sp" min="300" max="440" step="5" value="380" style="width:160px"></div>
+   <table class="m" id="mem"></table>
+  </div>
+  <div class="card"><h2>Interfața Modbus a PLC-ului (MB_CLIENT, ciclic 500 ms)</h2>
+   <table class="m">
+    <tr><th>PLC</th><th>Modbus (RTU, slave 1)</th><th>Funcție</th></tr>
+    <tr><td>MW10 / MW11</td><td>IR 30001 (T×10) / 30002 (debit×10)</td><td>04 citire</td></tr>
+    <tr><td>M1.0 / M1.1</td><td>DI 10001 (termostat) / 10002 (watchdog)</td><td>02 citire</td></tr>
+    <tr><td>Q0.0 / Q0.1</td><td>Coil 00001 (încălzitor) / 00002 (pompă)</td><td>15 scriere</td></tr>
+    <tr><td>MW12</td><td>HR 40001 (consemn×10)</td><td>06 scriere</td></tr>
+    <tr><td>M2.0</td><td>COMM_OK (2 cicluri consecutive fără eroare)</td><td>–</td></tr>
+   </table>
+  </div>
+ </div>
+</div>
+<div class="card"><h2>Vedere Ladder (generată din STL, cu fluxul de energie)</h2><div class="ladder" id="ladder"></div>
+<div class="mut">Verde = contact închis / bobină activă. Aceeași logică, două reprezentări: așa se transformă STL în Ladder și invers. Pe S7-1215C real se programează în Ladder sau SCL; STL există doar pe S7-300/400.</div></div>
+</div>
+
+<!-- ================= TAB 2 ================= -->
+<div class="tab" id="t-mb">
+<div class="g2">
+ <div class="card">
+  <h2>Master Modbus (cerere construită manual)</h2>
+  <div class="row"><label>Slave <input type="number" id="mId" value="1" min="0" max="247" style="width:64px"></label>
+   <label>Funcție <select id="mFc"><option value="1">01 Read Coils</option><option value="2">02 Read Discrete Inputs</option><option value="3" selected>03 Read Holding Registers</option><option value="4">04 Read Input Registers</option><option value="5">05 Write Single Coil</option><option value="6">06 Write Single Register</option><option value="15">15 Write Multiple Coils</option><option value="16">16 Write Multiple Registers</option><option value="43">43 (necunoscută)</option></select></label></div>
+  <div class="row"><label>Adresă (în cadru, de la 0) <input type="number" id="mAddr" value="0" min="0" max="65535" style="width:86px"></label>
+   <label id="lQty">Cantitate <input type="number" id="mQty" value="3" min="0" max="2000" style="width:76px"></label>
+   <label id="lVal">Valori (separate prin virgulă) <input type="text" id="mVals" value="1" style="width:130px"></label>
+   <span class="mut" id="mNot"></span></div>
+  <div class="row"><label>Viteză <select id="mBaud"><option>9600</option><option>19200</option><option>38400</option><option>115200</option></select> baud, 8N1</label></div>
+  <div class="row"><label class="ck"><input type="checkbox" id="mBadCrc"> CRC corupt</label><label class="ck"><input type="checkbox" id="mBadId"> adresă slave greșită</label>
+   <button class="b pri" id="mSend">Trimite</button></div>
+  <div class="mut">Cerere (RTU):</div><div class="hex" id="rqHex"></div>
+  <table class="m" id="rqTab"></table>
+  <div class="mut">Aceeași cerere în Modbus TCP (ce trimite PLC-ul către gateway; fără CRC, cu antet MBAP):</div><div class="hex" id="tcpHex"></div>
+ </div>
+ <div class="card">
+  <h2>Răspuns</h2>
+  <div class="hex" id="rsHex">–</div>
+  <table class="m" id="rsTab"></table>
+  <div class="mut" id="rsInfo"></div>
+  <h2 style="margin-top:14px">Registrele RTU (Arduino Uno, slave 1)</h2>
+  <table class="m" id="regs"></table>
+ </div>
+</div>
+<div class="card"><h2>Cadre de decodat manual</h2>
+ <div class="mut">Decodați fiecare cadru (adresă, funcție, parametri, CRC corect?) înainte de a apăsa „Arată răspunsul”.</div>
+ <div id="mys"></div></div>
+</div>
+
+<!-- ================= TAB 3 ================= -->
+<div class="tab" id="t-sys">
+<div class="g2">
+ <div class="card"><h2>Lanțul de comunicație</h2>
+  <svg id="chain" viewBox="0 0 620 170" style="width:100%;background:var(--svgbg);border-radius:10px"></svg>
+  <div class="row"><b>Defecte:</b>
+   <label class="ck"><input type="checkbox" id="fCable"> cablu RS-485 tăiat</label>
+   <label class="ck"><input type="checkbox" id="fGw"> gateway PC oprit</label>
+   <label class="ck"><input type="checkbox" id="fRtu"> Arduino fără alimentare</label></div>
+  <div class="row"><span>Mod RTU (HR 40003):</span>
+   <label class="ck"><input type="radio" name="mode" value="0" checked> comandat de PLC</label>
+   <label class="ck"><input type="radio" name="mode" value="1"> reglare locală în Arduino</label></div>
+  <div class="row"><span>Viteză proces:</span><select id="spd"><option value="30" selected>×30 (1 h = 2 min)</option><option value="100">×100</option><option value="300">×300</option></select>
+   <span>Temp. exterioară: <b id="tav">10</b> °C</span><input type="range" id="ta" min="-10" max="30" value="10" style="width:130px">
+   <button class="b" id="btnReset">Resetare proces</button></div>
+ </div>
+ <div class="card"><h2>Temperatura fermentatorului</h2>
+  <canvas id="cv" width="760" height="260"></canvas>
+  <div class="mut">Albastru: T reală · verde punctat: consemn · roșu punctat: 48 °C (termostat) · jos: încălzitor.</div></div>
+</div>
+<div class="g2">
+ <div class="card"><h2>Trafic Modbus (ultimele tranzacții)</h2><div class="row"><button class="b" id="trPause">Pauză</button><button class="b" id="trClear">Șterge</button></div><div id="traf"></div></div>
+ <div class="card"><h2>Jurnal</h2><div id="log"></div></div>
+</div>
+</div>
+
+<!-- ================= TAB 4 ================= -->
+<div class="tab" id="t-lab">
+<div class="card"><h2>Desfășurarea lucrării (2 × 2 ore)</h2>
+<h3 style="margin:6px 0">Partea A – PLC (ședința 1)</h3>
+<ol class="ex">
+<li>Încărcați „1. Pornire/oprire cu automenținere”. Rulați, acționați START/STOP și observați Ladder-ul. Modificați programul astfel încât pompa să pornească doar dacă termostatul de siguranță nu e declanșat.</li>
+<li>„2. Temporizator”: pompa pornește la 3 s după START. Ce se întâmplă dacă START e eliberat înainte de 3 s?</li>
+<li>„3. Termostat ON-OFF cu histerezis”: studiați cum S/R implementează histerezisul. Notați perioada de comutare și timpul în bandă. De ce se folosește M2.0?</li>
+<li>„4. Alarmă cu automenținere și confirmare”: scrieți și rețeaua de resetare. Aduceți temperatura peste 42 °C (reduceți temperatura exterioară nu ajută; creșteți consemnul la 44 °C).</li>
+<li>Pe PLC-ul real (S7-1215C): rescrieți exercițiul 1 în Ladder și exercițiul 3 în SCL (TIA Portal). Comparați cu STL-ul din simulator.</li>
+</ol>
+<h3 style="margin:6px 0">Partea B – RTU și Modbus (ședința 2)</h3>
+<ol class="ex" start="6">
+<li>Fila 2: construiți cereri pentru: citire T (30001), scriere consemn 40,0 °C, comandă încălzitor. Calculați manual CRC-ul pentru una dintre ele și comparați.</li>
+<li>Provocați excepții: adresă inexistentă, cantitate 0, funcție 43, valoare 700 în HR0. Ce cod primiți și de ce?</li>
+<li>Calculați timpul unei tranzacții la 9600 și 115200 baud; câte slave-uri pot fi interogate pe secundă?</li>
+<li>Decodați manual cele 4 cadre din secțiunea „Cadre de decodat”.</li>
+<li>Încărcați pe Arduino Uno sketch-ul <a class="dl" href="arduino/rtu_biogaz/rtu_biogaz.ino">rtu_biogaz.ino</a>, conectați RS485-TTL la RS485-USB și interogați-l cu un master (Modbus Poll, QModMaster sau Python). Comparați cadrele cu cele din simulator.</li>
+</ol>
+<h3 style="margin:6px 0">Partea C – Integrare</h3>
+<ol class="ex" start="11">
+<li>Rulați programul 3 cu modul „comandat de PLC”. Tăiați cablul RS-485 pentru 30 s și refaceți-l. Ce face watchdog-ul din RTU și ce face PLC-ul (M2.0)?</li>
+<li>Comutați pe „reglare locală în Arduino” și repetați. Comparați cu lucrarea 1 (distribuit vs. centralizat).</li>
+<li>Oprirea PLC-ului (STOP) cât timp încălzitorul e pornit: cine oprește încălzitorul și după cât timp?</li>
+<li>Pe echipamentul real: <a class="dl" href="gateway/modbus_gateway.py">modbus_gateway.py</a> (Modbus TCP → RTU) și blocul MB_CLIENT în TIA Portal, conform fișei în Word.</li>
+</ol>
+<div class="row"><div style="flex:1;min-width:220px"><span class="mut">Nume și prenume / grupa</span><br><input type="text" id="stu" style="width:100%"></div></div>
+<div class="q">1. Care sunt diferențele dintre un PLC și un RTU? Dați exemple din această lucrare.</div><textarea class="t" id="r1"></textarea>
+<div class="q">2. De ce este util watchdog-ul de comunicație și ce stare sigură ați ales pentru încălzitor?</div><textarea class="t" id="r2"></textarea>
+<div class="q">3. Ce rol are gateway-ul Modbus TCP→RTU și ce informații se pierd/se adaugă la conversie?</div><textarea class="t" id="r3"></textarea>
+<div class="q">4. Observații și concluzii.</div><textarea class="t" id="r4"></textarea>
+<div class="row"><button class="b pri" id="btnRep">Descarcă raportul (.txt)</button><span class="mut">Include programul STL, indicatorii, jurnalul și răspunsurile.</span></div>
+</div>
+</div>
+
+</main>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const f1=v=>v.toFixed(1);
+const hx=a=>Array.from(a,x=>('0'+x.toString(16).toUpperCase()).slice(-2)).join(' ');
+function crc16(a){let c=0xFFFF;for(const b of a){c^=b;for(let k=0;k<8;k++)c=(c&1)?((c>>1)^0xA001):(c>>1);}return c;}
+function withCrc(a){const c=crc16(a);return a.concat([c&255,c>>8]);}
+
+/* ================= RTU (port al sketch-ului Arduino) ================= */
+const NCOIL=2,NDI=2,NIR=3,NHR=5;
+const R={coil:[0,0],di:[0,0],ir:[0,0,0],hr:[380,5,0,10,100],T:22,valid:0,lastReq:performance.now(),sim:0};
+function hrOk(a,v){return a===0?v<=600:a===1?v<=100:a===2?v<=1:a===3?v<=3600:a===4?v<=600:false;}
+function exc(id,fc,c){return withCrc([id,fc|0x80,c]);}
+function mbProcess(req){
+ const len=req.length;if(len<4)return null;
+ const crc=crc16(req.slice(0,len-2));
+ if((req[len-2]|(req[len-1]<<8))!==crc)return null;
+ const id=req[0],fc=req[1],bc=id===0;
+ if(id!==1&&!bc)return null;
+ R.valid=1;if(R.ir[2]<65535)R.ir[2]++;
+ const be=(i)=>(req[i]<<8)|req[i+1];
+ const a=len>=6?be(2):0,q=len>=8?be(4):0;let rep=null;
+ const E=c=>exc(id,fc,c);
+ switch(fc){
+ case 1:case 2:{if(len!==8){rep=E(3);break;}const src=fc===1?R.coil:R.di,n=fc===1?NCOIL:NDI;
+  if(q<1||q>2000){rep=E(3);break;}if(a+q>n){rep=E(2);break;}
+  const nb=Math.ceil(q/8),r=[id,fc,nb];for(let i=0;i<nb;i++)r.push(0);
+  for(let i=0;i<q;i++)if(src[a+i])r[3+(i>>3)]|=1<<(i&7);rep=withCrc(r);break;}
+ case 3:case 4:{if(len!==8){rep=E(3);break;}const src=fc===3?R.hr:R.ir,n=fc===3?NHR:NIR;
+  if(q<1||q>125){rep=E(3);break;}if(a+q>n){rep=E(2);break;}
+  const r=[id,fc,q*2];for(let i=0;i<q;i++){r.push(src[a+i]>>8,src[a+i]&255);}rep=withCrc(r);break;}
+ case 5:{if(len!==8){rep=E(3);break;}if(q!==0xFF00&&q!==0){rep=E(3);break;}if(a>=NCOIL){rep=E(2);break;}
+  R.coil[a]=q===0xFF00?1:0;rep=withCrc(req.slice(0,6));break;}
+ case 6:{if(len!==8){rep=E(3);break;}if(a>=NHR){rep=E(2);break;}if(!hrOk(a,q)){rep=E(3);break;}
+  R.hr[a]=q;rep=withCrc(req.slice(0,6));break;}
+ case 15:{if(len<10){rep=E(3);break;}const b=req[6];if(q<1||q>1968||b!==Math.ceil(q/8)||len!==9+b){rep=E(3);break;}
+  if(a+q>NCOIL){rep=E(2);break;}for(let i=0;i<q;i++)R.coil[a+i]=(req[7+(i>>3)]>>(i&7))&1;rep=withCrc(req.slice(0,6));break;}
+ case 16:{if(len<11){rep=E(3);break;}const b=req[6];if(q<1||q>123||b!==q*2||len!==9+b){rep=E(3);break;}
+  if(a+q>NHR){rep=E(2);break;}for(let i=0;i<q;i++)if(!hrOk(a+i,be(7+2*i))){rep=E(3);return bc?null:rep;}
+  for(let i=0;i<q;i++)R.hr[a+i]=be(7+2*i);rep=withCrc(req.slice(0,6));break;}
+ default:rep=E(1);
+ }
+ return bc?null:rep;
+}
+const F={cable:0,gw:0,rtu:0};
+let Ta=10,SCALE=30;
+function procStep(dtReal){
+ const dt=dtReal*SCALE,u=(R.coil[0]&&!R.di[0]&&!F.rtu)?1:0;
+ R.T+=dt*(8*u-0.12*(R.T-Ta))/432;
+ if(!F.rtu){
+  if(R.T>48)R.di[0]=1;else if(R.T<46)R.di[0]=0;
+  const x=(R.T-38)/6;R.ir[0]=Math.round(R.T*10);R.ir[1]=Math.round(120*Math.exp(-x*x));
+  // regulator local / watchdog (o dată pe tick)
+  const now=performance.now();
+  if(R.valid){R.lastReq=now;R.valid=0;}
+  if(R.hr[2]===1){const sp=R.hr[0]/10,h=R.hr[1]/10;if(R.T<sp-h)R.coil[0]=1;else if(R.T>sp+h)R.coil[0]=0;R.di[1]=0;}
+  else if(R.hr[3]>0&&(now-R.lastReq)>R.hr[3]*1000){if(R.coil[0])log('RTU: watchdog – comunicație pierdută, încălzitor OPRIT (stare sigură)','w');R.coil[0]=0;R.di[1]=1;}
+  else R.di[1]=0;
+ }
+ S.u=u;S.sim+=dt;
+ if(R.T>S.maxT)S.maxT=R.T;S.tot+=dt;if(Math.abs(R.T-R.hr[0]/10)<=1.5)S.inb+=dt;
+}
+const S={u:0,sim:0,maxT:22,tot:0,inb:0,polls:0,fails:0,hist:[],lost:0};
+function resetProc(){R.T=22;R.coil=[0,0];R.di=[0,0];R.ir=[0,0,0];R.hr=[380,5,+document.querySelector('input[name=mode]:checked').value,10,100];R.lastReq=performance.now();R.hr[4]=Math.max(0,Ta*10);
+ S.sim=0;S.maxT=22;S.tot=0;S.inb=0;S.polls=0;S.fails=0;S.hist=[];S.lost=0;PLC.W.MW12=380;$('sp').value=380;$('spv').textContent='38,0';}
+
+/* transport: cadru RTU prin lanț (cablu, gateway, alimentare) */
+function link(){return !F.cable&&!F.gw&&!F.rtu;}
+function transact(frame){ // frame = octeți RTU complet; returnează răspuns sau null
+ if(!link())return null;
+ return mbProcess(frame);
+}
+
+/* ================= PLC: parser STL ================= */
+const ADDR_BIT=/^[IQM]\d+\.[0-7]$/,ADDR_T=/^T\d+$/,ADDR_W=/^(MW|IW|QW)\d+$/,NUM=/^-?\d+$/;
+function parseSTL(src){
+ const prog={nets:[],errors:[]};let net=null;
+ const err=(n,m)=>prog.errors.push('Linia '+n+': '+m);
+ function newNet(t){net={title:t,stmts:[],run:[],cur:null,stack:[],preset:null,last:null};prog.nets.push(net);}
+ function flush(){if(net.run.length){net.stmts.push({kind:'word',ins:net.run});net.run=[];}}
+ function ex(){return {groups:[[]]};}
+ function addLeaf(op,leaf,n){
+  if(!net.cur){flush();net.cur=ex();net.last=null;}
+  const g=net.cur.groups;
+  if(op==='A'){g[g.length-1].push(leaf);}
+  else{if(g[g.length-1].length===0)g[g.length-1].push(leaf);else g.push([leaf]);}
+ }
+ src.split('\n').forEach((raw,i)=>{
+  const n=i+1;let line=raw.replace(/\/\/.*$/,'').trim();if(!line)return;
+  if(/^NETWORK/i.test(line)){if(net){if(net.cur)err(n,'rețea anterioară fără ieșire (=, S, R, SD)');flush();}newNet(line.replace(/^NETWORK\s*\d*\s*:?\s*/i,''));return;}
+  if(!net)newNet('');
+  line=line.replace(/^(AN?|ON?|XN?)\s+\(/i,'$1(');
+  const m=line.match(/^(\S+)\s*(.*)$/);let op=m[1].toUpperCase(),opd=m[2].replace(/\s+/g,'').toUpperCase();
+  if(/^[IQM]$/.test(opd.charAt(0))&&false){}
+  switch(op){
+  case 'A':case 'AN':case 'O':case 'ON':{
+   if(!(ADDR_BIT.test(opd)||ADDR_T.test(opd))){err(n,'operand invalid pentru '+op+': '+(opd||'(gol)'));break;}
+   addLeaf(op[0],{addr:opd,neg:op.length===2},n);break;}
+  case 'A(':case 'O(':case 'AN(':case 'ON(':{
+   if(!net.cur){flush();net.cur=ex();net.last=null;}
+   net.stack.push({expr:net.cur,join:op[0],neg:op.length===3});net.cur=ex();break;}
+  case ')':{
+   if(!net.stack.length){err(n,') fără paranteză deschisă');break;}
+   const c=net.stack.pop(),sub=net.cur;net.cur=c.expr;const g=net.cur.groups;
+   const node={sub,neg:c.neg};
+   if(c.join==='A')g[g.length-1].push(node);else{if(g[g.length-1].length===0)g[g.length-1].push(node);else g.push([node]);}break;}
+  case 'L':{
+   const mm=opd.match(/^S5T#(\d+)(MS|S|M)$/);
+   if(mm){net.preset=(+mm[1])*(mm[2]==='MS'?1:mm[2]==='S'?1000:60000);break;}
+   if(!(ADDR_W.test(opd)||NUM.test(opd))){err(n,'operand invalid pentru L: '+opd);break;}
+   net.run.push({op:'L',a:opd});break;}
+  case 'T':{if(!ADDR_W.test(opd)){err(n,'operand invalid pentru T: '+opd);break;}net.run.push({op:'T',a:opd});break;}
+  case '+I':case '-I':net.run.push({op});break;
+  case '==I':case '<>I':case '>I':case '<I':case '>=I':case '<=I':{
+   const r=net.run,l1=r[r.length-1],l2=r[r.length-2];
+   if(!(l1&&l2&&l1.op==='L'&&l2.op==='L')){err(n,'comparația '+op+' cere două instrucțiuni L imediat înainte');break;}
+   r.pop();r.pop();flush();
+   if(net.cur&&net.cur.groups[0].length&&!net.stack.length){err(n,'comparația începe o rețea nouă; închideți rețeaua anterioară cu =, S sau R');}
+   if(!net.cur){net.cur=ex();net.last=null;}
+   const g=net.cur.groups;const leaf={cmp:{a:l2.a,b:l1.a,op:op.slice(0,-1)}};
+   g[g.length-1].push(leaf);
+   break;}
+  case '=':case 'S':case 'R':case 'SD':{
+   if(op==='SD'){if(!ADDR_T.test(opd)){err(n,'SD cere un temporizator (T1, T2...)');break;}if(net.preset==null){err(n,'SD fără L S5T#... înainte');break;}}
+   else if(!ADDR_BIT.test(opd)||/^I/.test(opd)){err(n,'operand invalid pentru '+op+': '+opd);break;}
+   if(net.stack.length){err(n,'paranteze neînchise');net.stack=[];}
+   let st;
+   if(net.cur){st={kind:'logic',expr:net.cur,outs:[]};net.stmts.push(st);net.last=st;net.cur=null;}
+   else if(net.last)st=net.last;else{err(n,op+' fără condiție logică');break;}
+   st.outs.push(op==='SD'?{k:'SD',t:opd,pre:net.preset}:{k:op,addr:opd});break;}
+  default:err(n,'instrucțiune necunoscută: '+op);
+  }
+ });
+ if(net){if(net.cur)prog.errors.push('Ultima rețea nu are ieșire (=, S, R, SD)');flush();}
+ return prog;
+}
+
+/* ================= PLC: execuție ================= */
+const PLC={run:false,prog:null,B:{},W:{MW12:380},T:{},scan:0,scanMs:50,ins:{'I0.0':0,'I0.1':1,'I0.2':0,'I0.3':0},cyc:0};
+function rb(a){if(ADDR_T.test(a))return PLC.T[a]?PLC.T[a].q:0;if(a[0]==='I')return PLC.ins[a]||0;return PLC.B[a]||0;}
+function rw(a){if(NUM.test(a))return +a;return PLC.W[a]||0;}
+function cmpv(c){const x=rw(c.a),y=rw(c.b);switch(c.op){case '==':return x===y;case '<>':return x!==y;case '>':return x>y;case '<':return x<y;case '>=':return x>=y;case '<=':return x<=y;}return false;}
+function evalNode(n){if(n.sub)return evalExpr(n.sub)!==!!n.neg;if(n.cmp)return cmpv(n.cmp);return (rb(n.addr)?1:0)!==(n.neg?1:0);}
+function evalExpr(e){return e.groups.some(g=>g.length&&g.every(evalNode));}
+function runWords(ins){let a1=0,a2=0;for(const i of ins){
+ if(i.op==='L'){a2=a1;a1=rw(i.a);}else if(i.op==='T'){PLC.W[i.a]=a1;}
+ else if(i.op==='+I'){a1=(a2+a1);}else if(i.op==='-I'){a1=(a2-a1);} }}
+function scanOnce(dt){
+ if(!PLC.prog||PLC.prog.errors.length)return;
+ for(const net of PLC.prog.nets)for(const st of net.stmts){
+  if(st.kind==='word'){runWords(st.ins);continue;}
+  const v=evalExpr(st.expr);
+  for(const o of st.outs){
+   if(o.k==='=')PLC.B[o.addr]=v?1:0;
+   else if(o.k==='S'){if(v)PLC.B[o.addr]=1;}
+   else if(o.k==='R'){if(v)PLC.B[o.addr]=0;}
+   else if(o.k==='SD'){const t=PLC.T[o.t]||(PLC.T[o.t]={el:0,q:0,pre:o.pre});t.pre=o.pre;
+     if(v){t.el=Math.min(t.pre,t.el+dt);t.q=t.el>=t.pre?1:0;}else{t.el=0;t.q=0;}}
+  }
+ }
+ PLC.cyc++;
+}
+
+/* ===== MB_CLIENT ciclic (PLC -> gateway -> RTU) ===== */
+const TR=[];let trPaused=false;
+function trace(txt,cls){if(trPaused)return;const d=document.createElement('div');if(cls)d.className=cls;d.textContent=txt;const t=$('traf');t.appendChild(d);while(t.children.length>40)t.removeChild(t.firstChild);t.scrollTop=t.scrollHeight;}
+function plcTx(name,pdu){
+ const fr=withCrc([1].concat(pdu));const rs=transact(fr);
+ if(!rs){trace(name+'  '+hx(fr)+'  → (fără răspuns: timeout)','e');return null;}
+ trace(name+'  '+hx(fr)+'  →  '+hx(rs),(rs[1]&0x80)?'w':'');
+ if(rs[1]&0x80)return null;return rs;
+}
+function pollOnce(){
+ let ok=true;const W=PLC.W,B=PLC.B;
+ let r=plcTx('04 IR0..1',[4,0,0,0,2]);
+ if(r){W.MW10=(r[3]<<8)|r[4];W.MW11=(r[5]<<8)|r[6];}else ok=false;
+ r=plcTx('02 DI0..1',[2,0,0,0,2]);
+ if(r){B['M1.0']=r[3]&1;B['M1.1']=(r[3]>>1)&1;}else ok=false;
+ const cb=(B['Q0.0']?1:0)|(B['Q0.1']?2:0);
+ r=plcTx('15 Coils 0..1',[15,0,0,0,2,1,cb]);if(!r)ok=false;
+ r=plcTx('06 HR0',[6,0,0,(W.MW12>>8)&255,W.MW12&255]);if(!r)ok=false;
+ S.polls++;
+ if(ok){PLC.fail=0;if(!B['M2.0']){B['M2.0']=1;log('PLC: comunicație cu RTU restabilită (COMM_OK)','g');}}
+ else{S.fails++;PLC.fail=(PLC.fail||0)+1;if(PLC.fail>=2&&B['M2.0']!==0){B['M2.0']=0;S.lost++;log('PLC: pierdere comunicație cu RTU (COMM_OK = 0)','e');}}
+}
+
+/* ================= exerciții STL ================= */
+const EX=[
+{n:'1. Pornire/oprire cu automenținere (pompă)',s:`NETWORK 1: pompa cu automenținere
+      A(
+      O     I0.0        // START
+      O     Q0.1        // automenținere
+      )
+      A     I0.1        // STOP (contact NC: 1 = neapăsat)
+      =     Q0.1
+`},
+{n:'2. Temporizator pornire întârziată',s:`NETWORK 1: pompa pornește la 3 s după START
+      A     I0.0
+      L     S5T#3S
+      SD    T1
+NETWORK 2
+      A     T1
+      A     I0.1
+      =     Q0.1
+`},
+{n:'3. Termostat ON-OFF cu histerezis (încălzitor)',s:`NETWORK 1: limitele de comutare (x10 °C)
+      L     MW12        // consemn
+      L     5
+      -I
+      T     MW14        // limita de pornire = consemn - 0,5 °C
+      L     MW12
+      L     5
+      +I
+      T     MW15        // limita de oprire = consemn + 0,5 °C
+NETWORK 2: pornire încălzitor
+      L     MW10        // temperatura citită prin Modbus
+      L     MW14
+      <I
+      A     M2.0        // numai dacă comunicația e bună
+      S     Q0.0
+NETWORK 3: oprire încălzitor
+      L     MW10
+      L     MW15
+      >I
+      O     M1.0        // termostat de siguranță declanșat
+      ON    M2.0        // sau comunicație pierdută
+      R     Q0.0
+`},
+{n:'4. Alarmă temperatură mare cu confirmare',s:`NETWORK 1: apariție alarmă (T > 42,0 °C)
+      L     MW10
+      L     420
+      >I
+      S     M3.0
+NETWORK 2: confirmare operator (I0.3)
+      A     I0.3
+      R     M3.0
+NETWORK 3: lampă alarmă
+      A     M3.0
+      =     Q0.2
+`}];
+$('exSel').innerHTML=EX.map((e,i)=>'<option value="'+i+'">'+e.n+'</option>').join('');
+function compile(){PLC.prog=parseSTL($('stl').value);$('errs').textContent=PLC.prog.errors.join('\n');drawLadder();return !PLC.prog.errors.length;}
+function loadEx(i){$('stl').value=EX[i].s;PLC.B={'M2.0':PLC.B['M2.0']||0};PLC.T={};PLC.W.MW12=+$('sp').value;compile();log('Încărcat: '+EX[i].n);}
+
+/* ================= desen Ladder ================= */
+const LW=96,LH=46;
+function lay(e){let W=0,H=0;for(const g of e.groups){let gw=0,gh=LH;for(const n of g){const d=n.sub?lay(n.sub):{w:LW,h:LH};n.d=d;gw+=d.w;gh=Math.max(gh,d.h);}g.d={w:gw,h:gh};W=Math.max(W,gw);H+=gh;}e.d={w:W,h:H};return e.d;}
+function pw(e,pin){let out=false;for(const g of e.groups){let p=pin;for(const n of g){
+  if(n.sub){pw(n.sub,p);const v=evalExpr(n.sub);n.p=!!p&&(n.neg?!v:v);}
+  else if(n.cmp){n.p=!!p&&cmpv(n.cmp);}
+  else{const c=(rb(n.addr)?1:0)!==(n.neg?1:0);n.p=!!p&&!!c;}
+  p=n.p;}
+  g.p=p;out=out||p;}e.pOut=out;return out;}
+function col(p){return p?'var(--ok)':'var(--wire)';}
+function rn(e,x,y,W,pin){ // desenează expresia; returnează svg
+ let s='';let yo=0;const base=[];
+ e.groups.forEach(g=>{
+  let cx=x;const by=y+yo+23;base.push(by);let p=pin;
+  for(const n of g){
+   if(n.sub){const sub=n.sub;const inner=rn(sub,cx,y+yo,n.d.w,p);s+=inner.s;
+     p=n.p;
+     if(n.neg)s+='<text x="'+(cx+n.d.w/2)+'" y="'+(y+yo+12)+'" font-size="10" fill="var(--mut)" text-anchor="middle">NOT</text>';
+   }else{
+    const on=n.p;const px=cx;
+    s+='<line x1="'+px+'" y1="'+by+'" x2="'+(px+LW)+'" y2="'+by+'" stroke="'+col(p)+'" stroke-width="2"/>';
+    if(n.cmp){const lab=n.cmp.a+' '+n.cmp.op+' '+n.cmp.b;
+     s+='<rect x="'+(px+6)+'" y="'+(by-14)+'" width="'+(LW-12)+'" height="28" rx="3" fill="var(--card)" stroke="'+col(on)+'" stroke-width="2"/><text x="'+(px+LW/2)+'" y="'+(by+4)+'" font-size="10.5" text-anchor="middle" fill="var(--tx)">'+lab+'</text>';
+    }else{
+     const cx1=px+LW/2-9,cx2=px+LW/2+9;
+     s+='<rect x="'+(cx1-2)+'" y="'+(by-12)+'" width="'+(cx2-cx1+4)+'" height="24" fill="var(--svgbg)"/>';
+     s+='<line x1="'+cx1+'" y1="'+(by-12)+'" x2="'+cx1+'" y2="'+(by+12)+'" stroke="'+col(on)+'" stroke-width="3"/><line x1="'+cx2+'" y1="'+(by-12)+'" x2="'+cx2+'" y2="'+(by+12)+'" stroke="'+col(on)+'" stroke-width="3"/>';
+     if(n.neg)s+='<line x1="'+(cx1-2)+'" y1="'+(by+12)+'" x2="'+(cx2+2)+'" y2="'+(by-12)+'" stroke="'+col(on)+'" stroke-width="2"/>';
+     s+='<text x="'+(px+LW/2)+'" y="'+(by-17)+'" font-size="11" text-anchor="middle" fill="var(--tx)">'+n.addr+'</text>';
+    }
+    p=on;
+   }
+   cx+=n.d.w;
+  }
+  if(cx<x+W)s+='<line x1="'+cx+'" y1="'+by+'" x2="'+(x+W)+'" y2="'+by+'" stroke="'+col(p)+'" stroke-width="2"/>';
+  yo+=g.d.h;
+ });
+ if(base.length>1){s+='<line x1="'+x+'" y1="'+base[0]+'" x2="'+x+'" y2="'+base[base.length-1]+'" stroke="'+col(pin)+'" stroke-width="2"/><line x1="'+(x+W)+'" y1="'+base[0]+'" x2="'+(x+W)+'" y2="'+base[base.length-1]+'" stroke="'+col(e.pOut)+'" stroke-width="2"/>';}
+ return {s,by:base[0]};
+}
+function drawLadder(){
+ const box=$('ladder');if(!PLC.prog){box.innerHTML='';return;}
+ let html='';
+ PLC.prog.nets.forEach((net,ni)=>{
+  let svg='',Y=0,maxW=0;const items=[];
+  net.stmts.forEach(st=>{
+   if(st.kind==='word'){const t=st.ins.map(i=>i.op+(i.a?' '+i.a:'')).join(' ; ');items.push({h:36,w:Math.min(900,t.length*6.4+30),draw:(y)=>'<rect x="10" y="'+(y+4)+'" width="'+Math.min(900,t.length*6.4+20)+'" height="28" rx="4" fill="var(--card)" stroke="var(--bd)"/><text x="18" y="'+(y+22)+'" font-size="11.5" fill="var(--mut)">'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</text>'});return;}
+   const d=lay(st.expr);const nOut=st.outs.length;const h=Math.max(d.h,nOut*LH);const W=d.w;
+   items.push({h:h+6,w:20+W+130,draw:(y)=>{
+    pw(st.expr,true);const v=st.expr.pOut;const r=rn(st.expr,20,y,W,true);let s2='<line x1="10" y1="'+(y+23)+'" x2="20" y2="'+(y+23)+'" stroke="var(--ok)" stroke-width="2"/>'+r.s;
+    const ox=20+W;st.outs.forEach((o,k)=>{const oy=y+k*LH+23;
+     s2+='<line x1="'+ox+'" y1="'+r.by+'" x2="'+(ox+14)+'" y2="'+r.by+'" stroke="'+col(v)+'" stroke-width="2"/>';
+     if(k>0)s2+='<line x1="'+(ox+14)+'" y1="'+r.by+'" x2="'+(ox+14)+'" y2="'+oy+'" stroke="'+col(v)+'" stroke-width="2"/>';
+     if(o.k==='SD'){s2+='<line x1="'+(ox+14)+'" y1="'+oy+'" x2="'+(ox+34)+'" y2="'+oy+'" stroke="'+col(v)+'" stroke-width="2"/><rect x="'+(ox+34)+'" y="'+(oy-20)+'" width="90" height="40" rx="4" fill="var(--card)" stroke="'+col(v)+'" stroke-width="2"/><text x="'+(ox+79)+'" y="'+(oy-4)+'" font-size="11" text-anchor="middle" fill="var(--tx)">SD '+o.t+'</text><text x="'+(ox+79)+'" y="'+(oy+12)+'" font-size="11" text-anchor="middle" fill="var(--mut)">PT '+(o.pre/1000)+' s</text>';}
+     else{const lbl=o.k==='='?'':o.k;s2+='<line x1="'+(ox+14)+'" y1="'+oy+'" x2="'+(ox+44)+'" y2="'+oy+'" stroke="'+col(v)+'" stroke-width="2"/><circle cx="'+(ox+54)+'" cy="'+oy+'" r="11" fill="'+(v?'var(--ok)':'var(--svgbg)')+'" fill-opacity="'+(v?0.35:1)+'" stroke="'+col(v)+'" stroke-width="2"/><text x="'+(ox+54)+'" y="'+(oy+4)+'" font-size="10" text-anchor="middle" fill="var(--tx)">'+lbl+'</text><text x="'+(ox+54)+'" y="'+(oy-16)+'" font-size="11" text-anchor="middle" fill="var(--tx)">'+o.addr+'</text>';}
+    });
+    return s2;}});
+  });
+  items.forEach(it=>{svg+=it.draw(Y);Y+=it.h;maxW=Math.max(maxW,it.w);});
+  html+='<div class="net"><div class="nt">Rețea '+(ni+1)+(net.title?': '+net.title:'')+'</div><svg width="'+(maxW+20)+'" height="'+(Y+20)+'" viewBox="0 0 '+(maxW+20)+' '+(Y+20)+'"><g transform="translate(0,14)"><line x1="10" y1="0" x2="10" y2="'+Y+'" stroke="var(--ok)" stroke-width="3"/>'+svg+'</g></svg></div>';
+ });
+ box.innerHTML=html;
+}
+
+/* ================= Modbus: descriere cadre ================= */
+const FCN={1:'Read Coils',2:'Read Discrete Inputs',3:'Read Holding Registers',4:'Read Input Registers',5:'Write Single Coil',6:'Write Single Register',15:'Write Multiple Coils',16:'Write Multiple Registers'};
+const EXC={1:'funcție ilegală',2:'adresă de date ilegală',3:'valoare de date ilegală',4:'defect slave',11:'gateway: țintă fără răspuns'};
+const h2=(a,i)=>hx(a.slice(i,i+2));
+function notation(fc,a){const b=({1:1,5:1,15:1,2:10001,4:30001,3:40001,6:40001,16:40001})[fc];return b?(b+a):'–';}
+function describe(f,isReq,ctx){
+ const rows=[];const fc=f[1];const crcOk=crc16(f.slice(0,-2))===(f[f.length-2]|(f[f.length-1]<<8));
+ rows.push(['Adresă slave',hx([f[0]]),f[0]===0?'difuzare (broadcast, fără răspuns)':'slave '+f[0]]);
+ if(fc&0x80){rows.push(['Funcție',hx([fc]),'EXCEPȚIE pentru funcția '+(fc&0x7F)]);rows.push(['Cod excepție',hx([f[2]]),f[2]+' = '+(EXC[f[2]]||'?')]);}
+ else{rows.push(['Funcție',hx([fc]),FCN[fc]||'necunoscută']);
+  if(isReq){
+   if([1,2,3,4].includes(fc)){rows.push(['Adresă start',h2(f,2),(f[2]<<8|f[3])+' (PLC: '+notation(fc,f[2]<<8|f[3])+')']);rows.push(['Cantitate',h2(f,4),String(f[4]<<8|f[5])]);}
+   else if(fc===5){rows.push(['Adresă coil',h2(f,2),String(f[2]<<8|f[3])]);rows.push(['Valoare',h2(f,4),(f[4]===0xFF?'ON (FF00)':f[4]===0?'OFF (0000)':'ILEGALĂ')]);}
+   else if(fc===6){rows.push(['Adresă registru',h2(f,2),(f[2]<<8|f[3])+' (PLC: '+notation(fc,f[2]<<8|f[3])+')']);rows.push(['Valoare',h2(f,4),String(f[4]<<8|f[5])]);}
+   else if(fc===15||fc===16){rows.push(['Adresă start',h2(f,2),String(f[2]<<8|f[3])]);rows.push(['Cantitate',h2(f,4),String(f[4]<<8|f[5])]);rows.push(['Număr octeți',hx([f[6]]),String(f[6])]);rows.push(['Date',hx(f.slice(7,-2)),fc===16?Array.from({length:f[6]>>1},(_,i)=>f[7+2*i]<<8|f[8+2*i]).join(', '):'biți, LSB primul']);}
+  }else{
+   if([1,2].includes(fc)){rows.push(['Număr octeți',hx([f[2]]),String(f[2])]);const q=ctx?ctx.q:f[2]*8;const bits=[];for(let i=0;i<q;i++)bits.push((f[3+(i>>3)]>>(i&7))&1);rows.push(['Date',hx(f.slice(3,3+f[2])),'biți: '+bits.join(' ')]);}
+   else if([3,4].includes(fc)){rows.push(['Număr octeți',hx([f[2]]),String(f[2])]);rows.push(['Date',hx(f.slice(3,3+f[2])),Array.from({length:f[2]>>1},(_,i)=>f[3+2*i]<<8|f[4+2*i]).join(', ')]);}
+   else{rows.push(['Ecou',hx(f.slice(2,6)),'adresă și valoare/cantitate repetate']);}
+  }}
+ rows.push(['CRC16 (lo hi)',hx(f.slice(-2)),crcOk?'corect':'GREȘIT (calculat '+hx([crc16(f.slice(0,-2))&255,crc16(f.slice(0,-2))>>8])+')']);
+ return rows;
+}
+const tbl=r=>'<tr><th>Câmp</th><th>Hex</th><th>Semnificație</th></tr>'+r.map(x=>'<tr><td>'+x[0]+'</td><td style="font-family:ui-monospace,Consolas,monospace">'+x[1]+'</td><td>'+x[2]+'</td></tr>').join('');
+let lastReq=null;
+function buildReq(){
+ const id=+$('mId').value,fc=+$('mFc').value,a=+$('mAddr').value,q=+$('mQty').value;let p=[fc,a>>8,a&255];
+ const vals=$('mVals').value.split(',').map(s=>parseInt(s.trim(),10)).filter(v=>!isNaN(v));
+ if([1,2,3,4].includes(fc)){p.push(q>>8,q&255);}
+ else if(fc===5){const v=(vals[0]?0xFF00:0);p.push(v>>8,v&255);}
+ else if(fc===6){const v=(vals[0]||0)&0xFFFF;p.push(v>>8,v&255);}
+ else if(fc===15){const n=vals.length;const nb=Math.ceil(n/8);p.push(n>>8,n&255,nb);const by=new Array(nb).fill(0);vals.forEach((v,i)=>{if(v)by[i>>3]|=1<<(i&7);});p=p.concat(by);}
+ else if(fc===16){const n=vals.length;p.push(n>>8,n&255,n*2);vals.forEach(v=>p.push((v>>8)&255,v&255));}
+ else {p.push(0,0);}
+ let idb=id;if($('mBadId').checked)idb=id===5?6:5;
+ let fr=withCrc([idb].concat(p));
+ if($('mBadCrc').checked)fr[fr.length-1]^=0x01;
+ return {fr,pdu:p,q:(fc===15||fc===16)?vals.length:q,fc,a,id:idb};
+}
+function mbUI(){
+ const fc=+$('mFc').value;
+ $('lQty').style.display=[1,2,3,4].includes(fc)?'':'none';
+ $('lVal').style.display=[5,6,15,16].includes(fc)?'':'none';
+ const a=+$('mAddr').value;$('mNot').textContent='Notație PLC: '+notation(fc,a);
+ const r=buildReq();lastReq=r;
+ $('rqHex').textContent=hx(r.fr);$('rqTab').innerHTML=tbl(describe(r.fr,true));
+ const tid=1,mb=[0,tid,0,0,0,r.pdu.length+1,r.id].concat(r.pdu);$('tcpHex').textContent=hx(mb)+'    (MBAP: tid | proto | lungime | unit)  +  PDU';
+}
+function mbSend(){
+ mbUI();const r=lastReq;const baud=+$('mBaud').value;
+ const rs=transact(r.fr);
+ if(!rs){const why=!link()?(F.cable?'cablu RS-485 tăiat':F.gw?'gateway oprit':'Arduino fără alimentare'):(crc16(r.fr.slice(0,-2))!==(r.fr[r.fr.length-2]|(r.fr[r.fr.length-1]<<8))?'CRC greșit – slave-ul ignoră în tăcere cadrul':r.id!==1?'adresă de slave diferită – nimeni nu răspunde':'difuzare – slave-ul execută, dar nu răspunde');
+  $('rsHex').textContent='(fără răspuns – timeout)';$('rsTab').innerHTML='';$('rsInfo').textContent='Motiv: '+why+'. Masterul așteaptă expirarea timeout-ului și retransmite sau declară eroare.';trace('MANUAL  '+hx(r.fr)+'  → timeout','e');}
+ else{$('rsHex').textContent=hx(rs);$('rsTab').innerHTML=tbl(describe(rs,false,{q:r.q}));
+  const chars=r.fr.length+rs.length,t=(chars*10/baud*1000)+2*(3.5*10/baud*1000);
+  $('rsInfo').textContent='Timp pe linie ≈ '+t.toFixed(1)+' ms ('+chars+' caractere × 10 biți / '+baud+' baud + 2 pauze de 3,5 caractere) → cel mult ~'+Math.floor(1000/t)+' tranzacții/s.';trace('MANUAL  '+hx(r.fr)+'  →  '+hx(rs));}
+ regTable();
+}
+function regTable(){
+ const row=(t,a,n,v)=>'<tr><td>'+t+'</td><td>'+a+'</td><td>'+n+'</td><td><b>'+v+'</b></td></tr>';
+ $('regs').innerHTML='<tr><th>Tip</th><th>Adresă (PLC / cadru)</th><th>Semnificație</th><th>Valoare</th></tr>'+
+ row('Coil','00001 / 0','Comandă încălzitor',R.coil[0])+row('Coil','00002 / 1','Comandă pompă',R.coil[1])+
+ row('DI','10001 / 0','Termostat siguranță declanșat',R.di[0])+row('DI','10002 / 1','Pierdere comunicație (watchdog)',R.di[1])+
+ row('IR','30001 / 0','Temperatură ×10 [°C]',R.ir[0]+' ('+(R.ir[0]/10).toFixed(1)+' °C)')+row('IR','30002 / 1','Debit biogaz ×10 [m³/h]',R.ir[1])+row('IR','30003 / 2','Contor cereri valide',R.ir[2])+
+ row('HR','40001 / 0','Consemn ×10',R.hr[0])+row('HR','40002 / 1','Histerezis ×10',R.hr[1])+row('HR','40003 / 2','Mod (0 PLC, 1 local)',R.hr[2])+row('HR','40004 / 3','Watchdog [s]',R.hr[3])+row('HR','40005 / 4','Temp. exterioară ×10',R.hr[4]);
+}
+const MYS=[
+ {h:'01 04 00 00 00 02 71 CB',a:'Slave 1, funcția 04 (Read Input Registers), adresă start 0 (30001), cantitate 2 → temperatura și debitul. CRC corect (71 CB).'},
+ {h:'01 05 00 01 FF 00 DD FA',a:'Slave 1, funcția 05, coil 1 (00002 = pompa) → ON (FF00). CRC corect.'},
+ {h:'01 06 00 00 01 90 88 36',a:'Slave 1, funcția 06, registrul 0 (40001, consemn) ← 0x0190 = 400 → 40,0 °C. CRC corect.'},
+ {h:'01 83 02 C0 F1',a:'Răspuns de excepție: funcția 03 cu bitul 7 setat (83), cod 02 = adresă de date ilegală (s-a cerut un registru care nu există).'}];
+function buildMys(){$('mys').innerHTML=MYS.map((m,i)=>'<div class="row"><div class="hex" style="flex:1;min-width:260px">'+m.h+'</div><button class="b" data-i="'+i+'">Arată răspunsul</button></div><div class="mut" id="my'+i+'" style="display:none;margin-bottom:6px">'+m.a+'</div>').join('');
+ $('mys').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const d=$('my'+b.dataset.i);d.style.display=d.style.display==='none'?'':'none';});}
+// verificare CRC-urilor exemplelor
+MYS.forEach(m=>{const b=m.h.split(' ').map(x=>parseInt(x,16));if(crc16(b.slice(0,-2))!==(b[b.length-2]|(b[b.length-1]<<8)))console.warn('CRC exemplu greșit',m.h);});
+
+/* ================= UI general ================= */
+const logArr=[];
+function clock(){const s=Math.floor(S.sim+6*3600),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+function log(msg,cls){logArr.push(clock()+'  '+msg);const d=document.createElement('div');if(cls)d.className=cls;d.textContent=clock()+'  '+msg;const L=$('log');L.appendChild(d);L.scrollTop=L.scrollHeight;}
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b));document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.id==='t-'+b.dataset.t));if(b.dataset.t==='mb'){mbUI();regTable();}});
+const IN=[['I0.0','START (întrerupător)'],['I0.1','STOP (NC: 1 = neapăsat)'],['I0.2','Intrare liberă'],['I0.3','Confirmare alarmă']];
+$('ins').innerHTML=IN.map(i=>'<div class="sw" data-a="'+i[0]+'"><span class="tg"></span><span>'+i[0]+' '+i[1]+'</span></div>').join('');
+const OUT=[['Q0.0','Încălzitor',''],['Q0.1','Pompă',''],['Q0.2','Alarmă','r'],['M2.0','COMM_OK','']];
+$('outs').innerHTML=OUT.map(o=>'<div class="sw" style="cursor:default"><span class="led '+o[2]+'" data-o="'+o[0]+'"></span><span>'+o[0]+' '+o[1]+'</span></div>').join('');
+$('ins').addEventListener('click',e=>{const d=e.target.closest('.sw');if(!d)return;const a=d.dataset.a;PLC.ins[a]=PLC.ins[a]?0:1;});
+function uiPLC(){
+ document.querySelectorAll('#ins .sw').forEach(d=>d.querySelector('.tg').classList.toggle('on',!!PLC.ins[d.dataset.a]));
+ document.querySelectorAll('[data-o]').forEach(l=>l.classList.toggle('on',!!(PLC.run&&PLC.B[l.dataset.o])));
+ const W=PLC.W,B=PLC.B;
+ $('mem').innerHTML='<tr><th>Variabilă</th><th>Valoare</th><th>Variabilă</th><th>Valoare</th></tr>'+
+ '<tr><td>MW10 temperatură ×10</td><td>'+(W.MW10||0)+'</td><td>MW11 debit ×10</td><td>'+(W.MW11||0)+'</td></tr>'+
+ '<tr><td>MW12 consemn ×10</td><td>'+W.MW12+'</td><td>MW14 / MW15 limite</td><td>'+(W.MW14||0)+' / '+(W.MW15||0)+'</td></tr>'+
+ '<tr><td>M1.0 termostat</td><td>'+(B['M1.0']||0)+'</td><td>M1.1 watchdog RTU</td><td>'+(B['M1.1']||0)+'</td></tr>'+
+ '<tr><td>M3.0 alarmă memorată</td><td>'+(B['M3.0']||0)+'</td><td>T1 (el / preset)</td><td>'+(PLC.T.T1?(PLC.T.T1.el/1000).toFixed(1)+' / '+(PLC.T.T1.pre/1000)+' s':'–')+'</td></tr>';
+ $('scanInfo').textContent=(PLC.run?'RUN':'STOP')+' · cicluri: '+PLC.cyc;
+ drawLadder();
+}
+$('sp').addEventListener('input',e=>{PLC.W.MW12=+e.target.value;$('spv').textContent=(PLC.W.MW12/10).toFixed(1).replace('.',',');});
+$('btnRun').addEventListener('click',()=>{if(compile()){PLC.run=true;log('PLC: RUN','g');}});
+$('btnStop').addEventListener('click',()=>{PLC.run=false;PLC.B={'M2.0':0};PLC.T={};log('PLC: STOP – ieșirile sunt dezactivate; nu se mai transmit cereri Modbus','w');});
+$('btnCompile').addEventListener('click',()=>{if(compile())log('Compilare reușită ('+PLC.prog.nets.length+' rețele)','g');});
+$('exLoad').addEventListener('click',()=>loadEx(+$('exSel').value));
+['mFc','mAddr','mQty','mVals','mId','mBadCrc','mBadId','mBaud'].forEach(i=>$(i).addEventListener('input',mbUI));
+$('mSend').addEventListener('click',mbSend);
+$('fCable').addEventListener('change',e=>{F.cable=+e.target.checked;log(F.cable?'DEFECT: cablu RS-485 tăiat':'Cablu RS-485 refăcut',F.cable?'e':'g');});
+$('fGw').addEventListener('change',e=>{F.gw=+e.target.checked;log(F.gw?'DEFECT: gateway PC oprit':'Gateway repornit',F.gw?'e':'g');});
+$('fRtu').addEventListener('change',e=>{F.rtu=+e.target.checked;log(F.rtu?'DEFECT: Arduino fără alimentare':'Arduino alimentat',F.rtu?'e':'g');});
+document.querySelectorAll('input[name=mode]').forEach(r=>r.addEventListener('change',e=>{R.hr[2]=+e.target.value;log('Mod RTU: '+(R.hr[2]?'reglare locală (Arduino)':'comandat de PLC'),'w');}));
+$('spd').addEventListener('change',e=>SCALE=+e.target.value);
+$('ta').addEventListener('input',e=>{Ta=+e.target.value;R.hr[4]=Math.max(0,Ta*10);$('tav').textContent=Ta;});
+$('btnReset').addEventListener('click',()=>{resetProc();$('stl').value&&compile();log('Proces resetat','g');});
+$('trPause').addEventListener('click',e=>{trPaused=!trPaused;e.target.textContent=trPaused?'Reia':'Pauză';});
+$('trClear').addEventListener('click',()=>{$('traf').innerHTML='';});
+$('btnRep').addEventListener('click',()=>{
+ const t=['LUCRAREA 2 – PLC, RTU ȘI MODBUS','Student: '+$('stu').value,'Data: '+new Date().toLocaleString('ro-RO'),'',
+ 'INDICATORI','Timp simulat: '+(S.sim/3600).toFixed(1)+' h','Temperatură maximă: '+f1(S.maxT)+' °C','În bandă ±1,5 °C: '+(S.tot?(100*S.inb/S.tot).toFixed(1):0)+' %','Cicluri Modbus: '+S.polls+' (cu eroare: '+S.fails+')','Pierderi de comunicație PLC: '+S.lost,'',
+ 'PROGRAM STL','',$('stl').value,'','JURNAL',...logArr,'','RĂSPUNSURI','1. '+$('r1').value,'','2. '+$('r2').value,'','3. '+$('r3').value,'','4. '+$('r4').value];
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t.join('\n')],{type:'text/plain;charset=utf-8'}));a.download='raport_lab2.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);});
+
+/* ===== lanț (schemă) și trend ===== */
+function chain(){
+ const ok1=!F.gw,ok2=!F.cable,ok3=!F.rtu;const c=v=>v?'var(--ok)':'var(--bad)';
+ const bx=(x,t1,t2,k)=>'<rect x="'+x+'" y="40" width="130" height="70" rx="10" fill="var(--card)" stroke="'+k+'" stroke-width="2"/><text x="'+(x+65)+'" y="68" font-size="13" font-weight="700" text-anchor="middle" fill="var(--tx)">'+t1+'</text><text x="'+(x+65)+'" y="88" font-size="11" text-anchor="middle" fill="var(--mut)">'+t2+'</text>';
+ const run=PLC.run;
+ $('chain').innerHTML=
+  bx(10,'PLC S7-1215C',run?'RUN · MB_CLIENT':'STOP',run?'var(--ok)':'var(--warn)')+
+  bx(245,'PC gateway',ok1?'TCP 502 → RTU':'OPRIT',c(ok1))+
+  bx(480,'Arduino Uno RTU',ok3?'slave 1 · 9600 8N1':'FĂRĂ ALIM.',c(ok3))+
+  '<line x1="140" y1="75" x2="245" y2="75" stroke="var(--ok)" stroke-width="3"/><text x="192" y="64" font-size="11" text-anchor="middle" fill="var(--mut)">Profinet / TCP</text>'+
+  '<line x1="375" y1="75" x2="480" y2="75" stroke="'+c(ok2)+'" stroke-width="3" '+(ok2?'':'stroke-dasharray="6 5"')+'/><text x="427" y="64" font-size="11" text-anchor="middle" fill="var(--mut)">RS-485 A/B</text>'+(ok2?'':'<text x="427" y="85" font-size="18" text-anchor="middle" fill="var(--bad)">✕</text>')+
+  '<text x="310" y="140" font-size="12" text-anchor="middle" fill="var(--mut)">Nivel 1 (PLC)  →  conversie de protocol  →  Nivel 0 (RTU de câmp + proces)</text>'+
+  '<text x="310" y="158" font-size="12" text-anchor="middle" fill="var(--tx)">COMM_OK (M2.0) = '+(PLC.B['M2.0']||0)+' · watchdog RTU = '+R.di[1]+'</text>';
+}
+const cv=$('cv'),cx=cv.getContext('2d');const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function trend(){
+ const w=cv.width,h=cv.height,pl=40,pr=8,pt=8,pb=34,ph=h-pt-pb-14;cx.clearRect(0,0,w,h);
+ const win=180,t1=performance.now()/1000,t0=t1-win;const Y=v=>pt+(1-(v-0)/(60))*ph,X=t=>pl+(t-t0)/win*(w-pl-pr);
+ cx.font='11px system-ui';cx.fillStyle=css('--mut');cx.strokeStyle=css('--bd');cx.lineWidth=1;
+ for(let v=0;v<=60;v+=10){cx.beginPath();cx.moveTo(pl,Y(v));cx.lineTo(w-pr,Y(v));cx.stroke();cx.fillText(v+'°',6,Y(v)+4);}
+ cx.fillText('ultimele 3 min (timp real)',pl,h-6);
+ cx.setLineDash([5,4]);cx.strokeStyle=css('--bad');cx.beginPath();cx.moveTo(pl,Y(48));cx.lineTo(w-pr,Y(48));cx.stroke();cx.setLineDash([]);
+ const ln=(i,c,wd,d)=>{cx.beginPath();cx.strokeStyle=c;cx.lineWidth=wd;cx.setLineDash(d||[]);let f=true;for(const r of S.hist){if(r[0]<t0)continue;const x=X(r[0]),y=Y(r[i]);if(f){cx.moveTo(x,y);f=false;}else cx.lineTo(x,y);}cx.stroke();cx.setLineDash([]);};
+ ln(2,css('--ok'),1.5,[6,4]);ln(1,css('--ac'),2.5);
+ cx.fillStyle=css('--bd');cx.fillRect(pl,h-pb+4,w-pl-pr,8);cx.fillStyle=css('--warn');
+ S.hist.forEach(r=>{if(r[0]>=t0&&r[3])cx.fillRect(X(r[0]),h-pb+4,3,8);});
+}
+function topUI(){
+ const pct=S.tot?100*S.inb/S.tot:0;
+ $('top').innerHTML=[['T proces',f1(R.T)+' °C'],['Încălzitor',S.u?'PORNIT':'oprit'],['COMM_OK',PLC.B['M2.0']?'da':'NU'],['PLC',PLC.run?'RUN':'STOP'],['În bandă ±1,5 °C',pct.toFixed(0)+' %'],['T maximă',f1(S.maxT)+' °C'],['Cicluri Modbus',S.polls+' ('+S.fails+' erori)']].map(k=>'<div class="kpi"><span>'+k[0]+'</span><b>'+k[1]+'</b></div>').join('');
+}
+
+/* ================= bucle ================= */
+let tPlc=0,tPoll=0,tHist=0,tUi=0;
+setInterval(()=>{ // 100 ms
+ procStep(0.1);
+ const now=performance.now();
+ if(PLC.run){scanOnce(100);}
+ else{for(const k of ['Q0.0','Q0.1','Q0.2'])PLC.B[k]=0;}
+ if(PLC.run&&now-tPoll>=500){tPoll=now;pollOnce();}
+ if(now-tHist>=500){tHist=now;S.hist.push([now/1000,R.T,R.hr[0]/10,S.u]);if(S.hist.length>700)S.hist.shift();}
+},100);
+setInterval(()=>{uiPLC();chain();trend();topUI();if($('t-mb').classList.contains('on'))regTable();},250);
+
+/* ===== inițializare ===== */
+PLC.B['M2.0']=0;
+buildMys();loadEx(2);mbUI();regTable();
+log('Simulator pornit. Încărcat exercițiul 3; apăsați RUN.');
+window.__lab={S,R,PLC,F,parseSTL,mbProcess,crc16,compile,loadEx,pollOnce,scanOnce,procStep,describe};
+})();
+</script></body></html>
