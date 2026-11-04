@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucrarea 1 – Piramida automatizării (simulator)</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--tx:#14202e;--mut:#5a6b7e;--ac:#1f6fd1;--bd:#dde4ec;--ok:#1e9e5a;--warn:#e08a00;--bad:#d23c3c;--l0:#6b7a8c;--l1:#2b8a9e;--l2:#1f6fd1;--l3:#6a4fc4;--l4:#b2487a;--svgbg:#eef3f9}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#1b2633;--tx:#e6edf3;--mut:#8b9bb0;--ac:#4aa3ff;--bd:#2c3b4e;--ok:#3ec47e;--warn:#f0a020;--bad:#ef5b5b;--l0:#7e8ea3;--l1:#3aa7bd;--l2:#3b86e0;--l3:#8a70e0;--l4:#d0689a;--svgbg:#162130}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:linear-gradient(135deg,#16355c,#1f6fd1);color:#fff;padding:18px 16px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+header a{color:#bfe0ff;font-size:13px;text-decoration:none}
+header h1{margin:6px 0 2px;font-size:clamp(20px,3.5vw,28px)}
+header p{margin:0;opacity:.85;font-size:14px}
+main{padding:16px 0 40px}
+.grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:16px}
+.card h2{margin:0 0 8px;font-size:17px}
+.mut{color:var(--mut);font-size:13px}
+svg text{font-family:inherit}
+#pyr{width:100%;height:auto;background:var(--svgbg);border-radius:10px}
+.lvl{cursor:pointer}.lvl:hover rect.b{stroke:var(--tx);stroke-width:2}
+.lnk{cursor:pointer}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:8px 0}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--tx);padding:6px 12px;cursor:pointer;font:inherit;font-size:14px}
+.seg button.on{background:var(--ac);color:#fff}
+button.b{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 12px;border-radius:8px;cursor:pointer;font:inherit;font-size:14px}
+button.b:hover{border-color:var(--ac)}button.b.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+label.ck{display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer}
+input[type=range]{width:180px}
+canvas{width:100%;height:230px;background:var(--svgbg);border-radius:10px;display:block}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:10px}
+.kpi{background:var(--svgbg);border-radius:8px;padding:8px 10px}.kpi span{display:block;font-size:12px;color:var(--mut)}.kpi b{font-size:18px}
+#log{height:170px;overflow:auto;font:13px/1.45 ui-monospace,Consolas,monospace;background:var(--svgbg);border-radius:8px;padding:8px}
+#log div{border-bottom:1px solid var(--bd);padding:1px 0}.w{color:var(--warn)}.e{color:var(--bad)}.g{color:var(--ok)}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;color:#fff}
+#det h3{margin:0 0 4px}#det table{width:100%;border-collapse:collapse;font-size:14px}#det td{padding:5px 6px;border-top:1px solid var(--bd);vertical-align:top}#det td:first-child{width:34%;color:var(--mut)}
+ol.ex{padding-left:20px}ol.ex li{margin:8px 0}
+textarea,input[type=text]{width:100%;background:var(--svgbg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px;font:inherit;font-size:14px}
+textarea{min-height:64px;resize:vertical}
+.q{margin:10px 0 4px;font-weight:600;font-size:14px}
+</style></head><body>
+<header><div class="wrap">
+<a href="../../">← Laboratoare</a>
+<h1>Lucrarea 1 – Arhitectura sistemelor de automatizare: piramida automatizării</h1>
+<p>Simulator: o stație de biogaz (fermentator încălzit) condusă pe cinci niveluri, de la senzor până la ERP. Tăiați legături, provocați defecte și comparați arhitectura distribuită cu cea centralizată.</p>
+</div></header>
+<main class="wrap">
+<div class="grid">
+<div>
+ <div class="card"><h2>Piramida automatizării (live)</h2>
+  <svg id="pyr" viewBox="0 0 600 560" role="img" aria-label="Piramida automatizării cu cinci niveluri"></svg>
+  <div class="mut">Clic pe un nivel pentru detalii. Clic pe cercul dintre niveluri pentru a <b>tăia / reface</b> legătura de comunicație.</div>
+ </div>
+ <div class="card" id="det"><h2>Detalii nivel</h2><div class="mut">Selectați un nivel din piramidă.</div></div>
+</div>
+<div>
+ <div class="card"><h2>Comandă simulare</h2>
+  <div class="row"><span>Arhitectură reglare:</span>
+   <span class="seg" id="segMode"><button data-v="dist" class="on">Distribuită (în PLC)</button><button data-v="cent">Centralizată (în SCADA)</button></span></div>
+  <div class="row"><span>Viteză:</span>
+   <span class="seg" id="segSpd"><button data-v="0">Pauză</button><button data-v="60" class="on">1 min/s</button><button data-v="300">5 min/s</button><button data-v="900">15 min/s</button></span>
+   <button class="b" id="btnReset">Resetare</button></div>
+  <div class="row"><span>Consemn temperatură (operator, SCADA): <b id="spv">38</b> °C</span><input type="range" id="sp" min="30" max="42" step="0.5" value="38"></div>
+  <div class="row"><span>Temperatura exterioară: <b id="tav">10</b> °C</span><input type="range" id="ta" min="-15" max="25" step="1" value="10"></div>
+  <div class="row"><b>Defecte:</b>
+   <label class="ck"><input type="checkbox" id="fPlc"> PLC defect</label>
+   <label class="ck"><input type="checkbox" id="fScada"> Server SCADA oprit</label>
+   <label class="ck"><input type="checkbox" id="fSens"> Senzor blocat</label>
+   <label class="ck"><input type="checkbox" id="fSafe" checked> Termostat de siguranță (48 °C)</label></div>
+  <div class="mut" id="clock"></div>
+ </div>
+ <div class="card"><h2>Temperatura fermentatorului</h2>
+  <canvas id="cv" width="760" height="300"></canvas>
+  <div class="mut">Gri: temperatura reală · albastru: ce vede SCADA · verde punctat: consemn · roșu punctat: alarmă 42 °C · jos: încălzitor.</div>
+  <div class="kpis" id="kpis"></div>
+ </div>
+ <div class="card"><h2>Jurnal de evenimente</h2><div id="log"></div></div>
+</div>
+</div>
+
+<div class="card"><h2>Desfășurarea lucrării</h2>
+<ol class="ex">
+<li><b>Funcționare normală (distribuită).</b> Rulați 3 ore simulate. Notați procentul de timp în bandă (±1,5 °C), temperatura maximă și producția de biogaz.</li>
+<li><b>Cădere legătură nivel 1–2</b> (tăiați legătura PLC–SCADA) 1 oră, în mod distribuit. Schimbați consemnul în acest interval. Ce continuă să funcționeze? Ce vede operatorul? Ce se întâmplă la refacerea legăturii?</li>
+<li><b>Aceeași situație în mod centralizat.</b> Repetați exercițiul 2 după ce coborâți temperatura exterioară la −10 °C, tăind legătura când încălzitorul este PORNIT (comparați și cu încălzitorul oprit în momentul tăierii). Observați comportamentul încălzitorului și rolul termostatului de siguranță (bifați/debifați-l).</li>
+<li><b>Senzor blocat.</b> Blocați senzorul când încălzitorul este pornit. Cine detectează problema și la ce nivel? Comparați cu și fără termostat de siguranță.</li>
+<li><b>Legătura MES / ERP.</b> Tăiați legătura 2–3 timp de 3 ore, apoi refaceți-o. Urmăriți bufferul și recuperarea datelor. Repetați pentru legătura 3–4.</li>
+<li><b>PLC defect / SCADA oprit.</b> Comparați efectul în cele două arhitecturi.</li>
+</ol>
+<div class="row"><div style="flex:1;min-width:220px"><span class="mut">Nume și prenume / grupa</span><input type="text" id="stu"></div></div>
+<div class="q">1. Ce avantaje are reglarea distribuită față de cea centralizată? Justificați cu observațiile din simulare.</div><textarea id="r1"></textarea>
+<div class="q">2. Ce funcții trebuie să rămână obligatoriu la nivelul 0–1, indiferent de starea rețelei?</div><textarea id="r2"></textarea>
+<div class="q">3. Pentru fiecare nivel, indicați scara de timp și un exemplu de date schimbate cu nivelul superior.</div><textarea id="r3"></textarea>
+<div class="q">4. Observații suplimentare / concluzii.</div><textarea id="r4"></textarea>
+<div class="row"><button class="b pri" id="btnRep">Descarcă raportul (.txt)</button><span class="mut">Raportul include indicatorii, jurnalul de evenimente și răspunsurile.</span></div>
+</div>
+</main>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const LV=[
+{n:'Nivel 0 – Câmp',s:'Senzori și elemente de execuție',c:'--l0',
+ f:'Măsoară mărimile procesului și execută comenzile: Pt100 pe fermentator, rezistență de încălzire, termostat de siguranță cablat.',
+ e:'Traductoare, actuatoare, relee, termostat mecanic, debitmetru de biogaz',
+ p:'4–20 mA, HART, semnale discrete 24 V',t:'milisecunde – secunde',
+ d:'Valori brute: temperatură, debit, stări ON/OFF',
+ x:'Termostatul de 48 °C este cablat direct și protejează instalația chiar dacă tot restul sistemului cade.',
+ k:'Se pierde măsurarea sau comanda; trebuie să existe poziție sigură (fail-safe).'},
+{n:'Nivel 1 – Control',s:'PLC / regulator',c:'--l1',
+ f:'Execută ciclic programul de reglare (ON-OFF cu histerezis), interblocări, numărare debit.',
+ e:'PLC, module I/E, regulatoare, microcontrolere',
+ p:'Modbus RTU/TCP, PROFIBUS, PROFINET, EtherNet/IP',t:'10 ms – 1 s (ciclu de scanare)',
+ d:'Variabile de proces, consemne, totalizatoare, alarme locale',
+ x:'În arhitectura distribuită bucla de temperatură rulează în PLC și continuă fără SCADA.',
+ k:'Se oprește reglarea locală; ieșirile cad în starea sigură (încălzitor oprit).'},
+{n:'Nivel 2 – Supraveghere',s:'SCADA / HMI / istoric',c:'--l2',
+ f:'Vizualizare, alarme, trenduri, scrierea consemnelor, arhivare istorică. Operatorul vede și comandă procesul.',
+ e:'Server SCADA (ex. LabVIEW cu variabile partajate în rețea), stații HMI, historian',
+ p:'OPC UA, Modbus TCP, Ethernet industrial',t:'secunde – minute',
+ d:'Trenduri, alarme, rețete, înregistrări la 1 min',
+ x:'Dacă legătura cu PLC cade, SCADA afișează date vechi (stale) și ar trebui să semnaleze pierderea comunicației.',
+ k:'Operatorul „orbește”, dar procesul poate continua dacă reglarea este în PLC.'},
+{n:'Nivel 3 – Operațiuni',s:'MES',c:'--l3',
+ f:'Urmărește producția: loturi, randament, energie produsă, indicatori de performanță (KPI).',
+ e:'Server MES, baze de date SQL',
+ p:'OPC UA, SQL, servicii web REST',t:'minute – ore',
+ d:'Cantități produse, energie, timpi de funcționare, calitate',
+ x:'Primește totalurile de la SCADA; la căderea legăturii datele se acumulează într-un buffer și se recuperează.',
+ k:'Se pierde vizibilitatea producției, nu controlul procesului.'},
+{n:'Nivel 4 – Întreprindere',s:'ERP',c:'--l4',
+ f:'Planificare, comenzi, stocuri, facturare, contabilitate.',
+ e:'ERP, aplicații de afaceri',
+ p:'API B2B, REST, EDI, schimb de fișiere',t:'ore – zile',
+ d:'Plan de producție, comenzi, producție realizată',
+ x:'Trimite ținta zilnică (m³ biogaz) și primește producția realizată.',
+ k:'Planificarea lucrează cu date întârziate; procesul nu este afectat.'}];
+const LNK=['Nivel 0–1 (I/E)','Nivel 1–2 (rețea de control)','Nivel 2–3 (date de producție)','Nivel 3–4 (date de afaceri)'];
+const PRO=['4–20 mA · HART','Modbus TCP · OPC UA','OPC UA · SQL','REST · B2B'];
+const LAT=['ms','100 ms','s','min'];
+
+let S;
+function init(){
+ S={t:6*3600,T:22,Ta:+$('ta').value,u:0,uCmd:0,sp:+$('sp').value,spP:+$('sp').value,
+  links:[1,1,1,1],plc:0,scada:0,sens:0,stuck:22,safe:1,safeTrip:0,mode:S&&S.mode||'dist',
+  Ts:22,age:0,uS:0,gas:0,gasPLC:0,gasS:0,mesGas:0,mesAge:0,erpGas:0,erpAge:0,
+  inband:0,tot:0,maxT:22,blind:0,alr:0,alrOn:0,inhib:0,hist:[],sim:0,target:220,pk:[],lastLog:''};
+ S.mode=curMode;S.spP=S.sp;
+}
+let curMode='dist',speed=60;
+init();
+$('log').innerHTML='';
+function clock(){const s=Math.floor(S.t),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return (d?'Z'+(d+1)+' ':'')+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');}
+const logArr=[];
+function log(msg,cls){logArr.push(clock()+'  '+msg);const dv=document.createElement('div');if(cls)dv.className=cls;dv.textContent=clock()+'  '+msg;const L=$('log');L.appendChild(dv);L.scrollTop=L.scrollHeight;}
+
+// ---- SVG pyramid
+const svg=$('pyr');
+const W=600,H=560,rowH=88,gap=24,top=14;
+const rowY=i=>top+(4-i)*(rowH+gap);   // level 0 at the bottom
+const rowX=i=>({x:20+i*30,w:560-i*60});
+const el=(n,a,p)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e;};
+const rects=[],txt=[],lnkEls=[],pk=[];
+function build(){
+ svg.innerHTML='';
+ for(let i=0;i<5;i++){
+  const {x,w}=rowX(i),y=rowY(i);
+  const g=el('g',{class:'lvl'});g.addEventListener('click',()=>detail(i));
+  el('rect',{class:'b',x,y,width:w,height:rowH,rx:10,fill:'var('+LV[i].c+')','fill-opacity':.16,stroke:'var('+LV[i].c+')','stroke-width':1.5},g);
+  const t1=el('text',{x:x+w/2,y:y+22,'text-anchor':'middle','font-size':14,'font-weight':700,fill:'var(--tx)'},g);t1.textContent=LV[i].n+' · '+LV[i].s;
+  const a=el('text',{x:x+w/2,y:y+44,'text-anchor':'middle','font-size':12.5,fill:'var(--tx)'},g);
+  const b=el('text',{x:x+w/2,y:y+62,'text-anchor':'middle','font-size':12.5,fill:'var(--tx)'},g);
+  const c=el('text',{x:x+w/2,y:y+79,'text-anchor':'middle','font-size':11.5,fill:'var(--mut)'},g);
+  txt[i]=[a,b,c];rects[i]=g;
+ }
+ for(let i=0;i<4;i++){
+  const yb=rowY(i),yt=rowY(i+1)+rowH;       // gap between row i+1 bottom and row i top
+  const cx=W/2;
+  el('line',{x1:cx,y1:yt,x2:cx,y2:yb,stroke:'var(--mut)','stroke-width':2,'stroke-dasharray':'4 3'});
+  const g=el('g',{class:'lnk'});g.addEventListener('click',()=>toggleLink(i));
+  const circ=el('circle',{cx:cx,cy:(yt+yb)/2,r:10,fill:'var(--ok)',stroke:'var(--card)','stroke-width':2},g);
+  const cr=el('text',{x:cx,y:(yt+yb)/2+4,'text-anchor':'middle','font-size':12,fill:'#fff','font-weight':700},g);cr.textContent='✓';
+  const lb=el('text',{x:cx+18,y:(yt+yb)/2+4,'font-size':11,fill:'var(--mut)'});lb.textContent=PRO[i]+' · '+LAT[i];
+  lnkEls[i]={circ,cr,y1:yb,y2:yt,cx};
+ }
+ // digester icon inside level 0 bar (left)
+}
+build();
+function toggleLink(i){S.links[i]^=1;log((S.links[i]?'Legătură refăcută: ':'Legătură TĂIATĂ: ')+LNK[i],S.links[i]?'g':'e');if(S.links[i])resync(i);ui();}
+function resync(i){
+ if(i===1&&S.mode==='dist'&&S.spP!==S.sp&&!S.scada&&!S.plc){S.spP=S.sp;log('Consemnul din SCADA a fost transferat în PLC ('+S.sp.toFixed(1)+' °C)','g');}
+ if(i===2&&S.mesAge>=60)log('MES va recupera ~'+Math.floor(S.mesAge/60)+' înregistrări din bufferul SCADA','g');
+ if(i===3&&S.erpAge>=300)log('ERP va recupera datele din bufferul MES','g');
+}
+function detail(i){
+ const v=LV[i];
+ $('det').innerHTML='<h3 style="color:var('+v.c+')">'+v.n+' – '+v.s+'</h3><table>'+
+ [['Funcții',v.f],['Echipamente',v.e],['Protocoale',v.p],['Scară de timp',v.t],['Date schimbate',v.d],['În stația de biogaz',v.x],['Dacă nivelul cade',v.k]].map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</table>';
+}
+
+// ---- simulation
+function step(){
+ const s=S;
+ const Tm=s.sens?s.stuck:s.T;
+ // 1. control
+ if(s.plc||!s.links[0]){s.uCmd=0;}
+ else if(s.mode==='dist'){ if(Tm<s.spP-0.5)s.uCmd=1; else if(Tm>s.spP+0.5)s.uCmd=0; }
+ else { if(Math.floor(s.t)%10===0 && s.links[1] && !s.scada){ if(Tm<s.sp-0.5)s.uCmd=1; else if(Tm>s.sp+0.5)s.uCmd=0; } }
+ // 2. safety thermostat (hardware, level 0)
+ if(s.safe){ if(s.T>48&&!s.safeTrip){s.safeTrip=1;log('Termostat de siguranță a declanșat la '+s.T.toFixed(1)+' °C','w');} if(s.safeTrip&&s.T<46)s.safeTrip=0; } else s.safeTrip=0;
+ s.u=s.safeTrip?0:s.uCmd;
+ // 3. process
+ s.T+=(8*s.u-0.12*(s.T-s.Ta))/432;
+ if(s.T>s.maxT)s.maxT=s.T;
+ const q=12*Math.exp(-Math.pow((s.T-38)/6,2));  // m3/h
+ const dV=q/3600; s.gas+=dV; s.q=q;
+ if(!s.plc&&s.links[0])s.gasPLC+=dV;
+ if(s.T>45&&!s.inhib){s.inhib=1;log('Temperatură >45 °C: risc de inhibare a bacteriilor metanogene','e');}
+ if(s.T<44)s.inhib=0;
+ // 4. SCADA acquisition
+ const link=!s.plc&&s.links[0]&&s.links[1]&&!s.scada;
+ if(link){s.Ts=Tm;s.age=0;s.uS=s.u;s.gasS=s.gasPLC;
+   if(s.mode==='dist'&&s.spP!==s.sp){s.spP=s.sp;log('Consemn transferat în PLC: '+s.sp.toFixed(1)+' °C','g');}}
+ else s.age++;
+ // alarms (SCADA)
+ if(!s.scada){
+   if(link&&s.Ts>42&&!s.alrOn){s.alrOn=1;s.alr++;log('ALARMĂ SCADA: temperatură ridicată '+s.Ts.toFixed(1)+' °C','e');}
+   if(s.Ts<40)s.alrOn=0;
+   if(s.age===30)log('SCADA: pierdere comunicație cu PLC (date vechi)','w');
+ }
+ if(s.age>30)s.blind++;
+ // 5. MES / ERP sync
+ if(!s.scada&&s.links[2]&&Math.floor(s.t)%60===0){ s.mesGas=s.gasS;s.mesAge=0;} else s.mesAge++;
+ if(s.links[3]&&Math.floor(s.t)%300===0){s.erpGas=s.mesGas;s.erpAge=0;} else s.erpAge++;
+ // 6. KPI
+ s.tot++;const ref=s.mode==='dist'?s.spP:s.sp;
+ if(Math.abs(s.T-ref)<=1.5)s.inband++;
+ if(Math.floor(s.t)%20===0){s.hist.push([s.t,s.T,s.Ts,(s.mode==='dist'?s.spP:s.sp),s.u]);if(s.hist.length>900)s.hist.shift();}
+ s.t++;
+}
+let last=performance.now(),acc=0;
+function loop(now){
+ const dt=Math.min(0.25,(now-last)/1000);last=now;
+ acc+=dt*speed;const n=Math.floor(acc);acc-=n;
+ for(let i=0;i<n;i++)step();
+ draw(now);requestAnimationFrame(loop);
+}
+
+// ---- drawing
+let pkT=[0,0,0,0];
+function packets(now){
+ const rates=[250,650,1500,3500];
+ for(let i=0;i<4;i++){
+  if(speed&&now-pkT[i]>rates[i]){pkT[i]=now;pk.push({i,p:0,dir:Math.random()<.7?1:-1,born:now});}
+ }
+ for(let k=pk.length-1;k>=0;k--){const a=pk[k];a.p+=0.018;
+  const ok=S.links[a.i];
+  const lim=ok?1:0.5;
+  if(a.p>=lim){ if(!ok){a.dead=(a.dead||0)+1;} if(ok||a.dead>12){pk.splice(k,1);} }
+ }
+}
+let pkEls=[];
+function drawPk(){
+ pkEls.forEach(e=>e.remove());pkEls=[];
+ for(const a of pk){const L=lnkEls[a.i];const y=a.dir>0?L.y1+(L.y2-L.y1)*a.p:L.y2+(L.y1-L.y2)*a.p;
+  const c=el('circle',{cx:L.cx,cy:y,r:4,fill:a.dir>0?'var(--ac)':'var(--warn)'});pkEls.push(c);
+  if(!S.links[a.i]&&a.p>=0.5){const x=el('text',{x:L.cx,y:y+4,'text-anchor':'middle','font-size':14,fill:'var(--bad)','font-weight':700});x.textContent='✕';pkEls.push(x);c.remove();}}
+}
+function f1(v){return v.toFixed(1);}
+function ui(){
+ for(let i=0;i<4;i++){const L=lnkEls[i];L.circ.setAttribute('fill',S.links[i]?'var(--ok)':'var(--bad)');L.cr.textContent=S.links[i]?'✓':'✕';}
+ const s=S;
+ const stale=s.age>30;
+ txt[0][0].textContent='T proces '+f1(s.T)+' °C · senzor '+(s.sens?'BLOCAT':'ok')+' · încălzitor '+(s.u?'PORNIT':'oprit');
+ txt[0][1].textContent='Termostat de siguranță: '+(s.safe?(s.safeTrip?'DECLANȘAT':'armat'):'dezactivat')+' · debit biogaz '+f1(s.q||0)+' m³/h';
+ txt[0][2].textContent='4–20 mA · Pt100 · rezistență 8 kW';
+ txt[1][0].textContent=s.plc?'PLC DEFECT – ieșiri dezactivate':(s.links[0]?'Consemn local: '+f1(s.spP)+' °C · ieșire '+(s.uCmd?'ON':'OFF'):'Pierdere I/E (cablu tăiat)');
+ txt[1][1].textContent='Mod: '+(s.mode==='dist'?'reglare în PLC (autonom)':'PLC doar transmite comenzile SCADA');
+ txt[1][2].textContent='Totalizator biogaz: '+f1(s.gasPLC)+' m³';
+ txt[2][0].textContent=s.scada?'SERVER SCADA OPRIT':'T afișat '+f1(s.Ts)+' °C · consemn operator '+f1(s.sp)+' °C';
+ txt[2][1].textContent=s.scada?'Fără supraveghere și fără arhivare':(stale?'⚠ DATE VECHI de '+Math.floor(s.age/60)+' min '+(s.age%60)+' s':'Date proaspete');
+ txt[2][2].textContent='Alarme: '+s.alr+' · biogaz raportat: '+f1(s.gasS)+' m³';
+ txt[3][0].textContent='Biogaz '+f1(s.mesGas)+' m³ · energie ≈ '+f1(s.mesGas*2)+' kWh';
+ txt[3][1].textContent=s.links[2]&&!s.scada?'Sincronizat':'Buffer în SCADA: '+Math.floor(s.mesAge/60)+' înreg. nesincronizate';
+ txt[3][2].textContent='Date vechi de '+Math.floor(s.mesAge/60)+' min';
+ txt[4][0].textContent='Țintă '+s.target+' m³/zi · realizat '+f1(s.erpGas)+' m³';
+ txt[4][1].textContent=s.links[3]?'Sincronizat cu MES':'Fără legătură cu MES';
+ txt[4][2].textContent='Realizare plan: '+f1(100*s.erpGas/s.target)+' %';
+ rects[0].querySelector('rect').setAttribute('stroke',s.u?'var(--warn)':'var(--l0)');
+ $('clock').textContent='Ora simulată: '+clock()+'  (scurs: '+((s.t-6*3600)/3600).toFixed(1)+' h)';
+ const pct=s.tot?100*s.inband/s.tot:0;
+ $('kpis').innerHTML=[['T reală',f1(s.T)+' °C'],['T maximă',f1(s.maxT)+' °C'],['În bandă ±1,5 °C',f1(pct)+' %'],['Fără supraveghere',Math.floor(s.blind/60)+' min'],['Biogaz real',f1(s.gas)+' m³'],['Alarme',s.alr]].map(k=>'<div class="kpi"><span>'+k[0]+'</span><b>'+k[1]+'</b></div>').join('');
+}
+const cv=$('cv'),cx=cv.getContext('2d');
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function draw(now){
+ packets(now);drawPk();ui();
+ const w=cv.width,h=cv.height,pl=44,pr=10,pt=10,pb=40,ph=h-pt-pb-26;
+ cx.clearRect(0,0,w,h);
+ const hist=S.hist;const win=4*3600,t1=S.t,t0=t1-win;
+ const Tmin=-15,Tmax=55;
+ const X=t=>pl+(t-t0)/win*(w-pl-pr),Y=v=>pt+(1-(v-Tmin)/(Tmax-Tmin))*ph;
+ cx.font='12px system-ui';cx.fillStyle=css('--mut');cx.strokeStyle=css('--bd');cx.lineWidth=1;
+ for(let v=-10;v<=50;v+=10){cx.beginPath();cx.moveTo(pl,Y(v));cx.lineTo(w-pr,Y(v));cx.stroke();cx.fillText(v+'°',6,Y(v)+4);}
+ for(let k=0;k<=4;k++){const t=t0+k*win/4;const hh=Math.floor((t%86400)/3600),mm=Math.floor((t%3600)/60);cx.fillText(String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0'),X(t)-14,h-8);}
+ cx.setLineDash([5,4]);cx.strokeStyle=css('--bad');cx.beginPath();cx.moveTo(pl,Y(42));cx.lineTo(w-pr,Y(42));cx.stroke();cx.setLineDash([]);
+ function line(idx,col,wd,dash){cx.beginPath();cx.strokeStyle=col;cx.lineWidth=wd;cx.setLineDash(dash||[]);let first=true;
+  for(const r of hist){if(r[0]<t0)continue;const x=X(r[0]),y=Y(r[idx]);if(first){cx.moveTo(x,y);first=false;}else cx.lineTo(x,y);}cx.stroke();cx.setLineDash([]);}
+ line(3,css('--ok'),1.5,[6,4]);line(1,css('--l0'),2.5);line(2,css('--l2'),2);
+ // heater band
+ const yb=h-pb+2,hb=10;cx.fillStyle=css('--bd');cx.fillRect(pl,yb-4,w-pl-pr,hb);cx.fillStyle=css('--warn');
+ for(let i=0;i<hist.length;i++){const r=hist[i];if(r[0]<t0||!r[4])continue;const x=X(r[0]);cx.fillRect(x,yb-4,Math.max(1,X(r[0]+20)-x),hb);}
+}
+// ---- events
+$('segMode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;curMode=b.dataset.v;S.mode=curMode;if(curMode==='dist'&&!S.scada&&S.links[1])S.spP=S.sp;
+ [...$('segMode').children].forEach(x=>x.classList.toggle('on',x===b));log('Arhitectura de reglare: '+(curMode==='dist'?'DISTRIBUITĂ (în PLC)':'CENTRALIZATĂ (în SCADA)'),'w');});
+$('segSpd').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;speed=+b.dataset.v;[...$('segSpd').children].forEach(x=>x.classList.toggle('on',x===b));});
+$('sp').addEventListener('input',e=>{S.sp=+e.target.value;$('spv').textContent=S.sp;});
+$('sp').addEventListener('change',e=>{log('Operator: consemn nou '+S.sp.toFixed(1)+' °C'+((S.mode==='dist'&&(!S.links[1]||S.scada||S.plc))?' (în așteptare – nu poate ajunge în PLC)':''),'w');});
+$('ta').addEventListener('input',e=>{S.Ta=+e.target.value;$('tav').textContent=S.Ta;});
+$('fPlc').addEventListener('change',e=>{S.plc=+e.target.checked;log(S.plc?'DEFECT: PLC oprit (ieșiri dezactivate)':'PLC repornit',S.plc?'e':'g');});
+$('fScada').addEventListener('change',e=>{S.scada=+e.target.checked;log(S.scada?'DEFECT: server SCADA oprit':'Server SCADA repornit',S.scada?'e':'g');});
+$('fSens').addEventListener('change',e=>{S.sens=+e.target.checked;S.stuck=S.T;log(S.sens?'DEFECT: senzor blocat la '+S.T.toFixed(1)+' °C':'Senzor revenit la normal',S.sens?'e':'g');});
+$('fSafe').addEventListener('change',e=>{S.safe=+e.target.checked;log('Termostat de siguranță '+(S.safe?'armat':'DEZACTIVAT'),S.safe?'g':'w');});
+$('btnReset').addEventListener('click',()=>{const m=curMode;init();S.mode=m;['fPlc','fScada','fSens'].forEach(i=>$(i).checked=false);$('fSafe').checked=true;S.safe=1;S.sp=+$('sp').value;S.spP=S.sp;S.Ta=+$('ta').value;$('log').innerHTML='';logArr.length=0;log('Simulare resetată','g');});
+$('btnRep').addEventListener('click',()=>{
+ const s=S,pct=s.tot?100*s.inband/s.tot:0;
+ const t=['LUCRAREA 1 – PIRAMIDA AUTOMATIZĂRII','Disciplina: Automatizarea Sistemelor și Proceselor Industriale (MSP2101)','Student: '+$('stu').value,'Data: '+new Date().toLocaleString('ro-RO'),'',
+ 'INDICATORI LA FINALUL SIMULĂRII','Arhitectură: '+(s.mode==='dist'?'distribuită':'centralizată'),'Timp simulat: '+((s.t-6*3600)/3600).toFixed(1)+' h','Timp în bandă ±1,5 °C: '+pct.toFixed(1)+' %','Temperatură maximă: '+s.maxT.toFixed(1)+' °C','Timp fără supraveghere SCADA: '+Math.floor(s.blind/60)+' min','Alarme: '+s.alr,'Biogaz produs: '+s.gas.toFixed(1)+' m3','Biogaz raportat în ERP: '+s.erpGas.toFixed(1)+' m3','',
+ 'JURNAL EVENIMENTE',...logArr,'','RĂSPUNSURI','1. '+$('r1').value,'','2. '+$('r2').value,'','3. '+$('r3').value,'','4. '+$('r4').value];
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t.join('\n')],{type:'text/plain;charset=utf-8'}));a.download='raport_lab1.txt';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);});
+log('Simulare pornită: arhitectură distribuită, consemn 38 °C','g');
+detail(1);
+requestAnimationFrame(t=>{last=t;loop(t);});
+window.__S=()=>S;window.__step=step;
+})();
+</script></body></html>
