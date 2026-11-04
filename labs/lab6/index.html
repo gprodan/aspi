@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucrarea 6 – Interfețe om-mașină (HMI)</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--tx:#14202e;--mut:#5a6b7e;--ac:#1f6fd1;--bd:#dde4ec;--ok:#1e9e5a;--warn:#e08a00;--bad:#d23c3c;--svgbg:#eef3f9;--code:#0f1720;--codetx:#d7e3f2}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#1b2633;--tx:#e6edf3;--mut:#8b9bb0;--ac:#4aa3ff;--bd:#2c3b4e;--ok:#3ec47e;--warn:#f0a020;--bad:#ef5b5b;--svgbg:#162130;--code:#0b1118}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:14px 16px 0;max-width:1200px;margin:0 auto}
+header a{color:var(--ac);font-size:13px;text-decoration:none}
+h1{font-size:20px;margin:4px 0 2px}header p{margin:0 0 10px;color:var(--mut);font-size:13px}
+nav{display:flex;gap:4px;flex-wrap:wrap;max-width:1200px;margin:0 auto;padding:0 16px;border-bottom:1px solid var(--bd)}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;color:var(--mut);font:inherit;font-weight:600;cursor:pointer}
+nav button.on{color:var(--ac);border-color:var(--ac)}
+main{max-width:1200px;margin:0 auto;padding:14px 16px 24px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:15px}
+.g2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:14px}@media(max-width:950px){.g2{grid-template-columns:1fr}}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.row{margin:8px 0}.row label{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:13px}.row b{color:var(--tx)}
+input[type=range]{width:100%}
+select,input[type=number],input[type=text],textarea{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:5px 6px;font:inherit;max-width:100%}
+select,input[type=text],textarea{width:100%}
+button.b{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer;font-size:14px}
+button.b.g{background:var(--ok)}button.b.r{background:var(--bad)}button.b.n{background:var(--mut)}button.b.s{padding:3px 8px;font-size:12px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0}
+.kv div{background:var(--svgbg);border-radius:8px;padding:6px 10px}.kv span{display:block;font-size:12px;color:var(--mut)}.kv b{font-size:16px;font-variant-numeric:tabular-nums}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+pre.code{background:var(--code);color:var(--codetx);border-radius:8px;padding:10px;font:12.5px/1.45 ui-monospace,Consolas,monospace;overflow:auto;margin:0;white-space:pre}
+small,.mut{color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:4px 6px;text-align:left}
+.inl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chk{padding-left:4px}.chk li{list-style:none;margin:3px 0}.chk li:before{content:"○ ";color:var(--mut)}.chk li.y:before{content:"✔ ";color:var(--ok)}.chk li.n:before{content:"✖ ";color:var(--bad)}
+.toast{position:fixed;right:14px;bottom:14px;background:var(--card);border:1px solid var(--bad);padding:8px 12px;border-radius:8px;max-width:340px;display:none;z-index:9}
+/* panou HMI */
+#pwrap{width:100%;overflow:hidden;border-radius:10px;background:#222;padding:0}
+#panel{position:relative;transform-origin:0 0;overflow:hidden;font-family:Arial,Helvetica,sans-serif}
+.pe{position:absolute;box-sizing:border-box;user-select:none;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap}
+.pe.edit{cursor:move;outline:1px dashed rgba(120,120,120,.8)}.pe.edit.sel{outline:2px solid #1f6fd1}
+.pbtn{border:1.5px solid #6b7785;border-radius:6px;font-weight:700}.pbtn:active{filter:brightness(.85)}
+.pbar{border:1.5px solid #6b7785;justify-content:flex-start;align-items:flex-end}.pbar i{display:block;width:100%;position:absolute;bottom:0;left:0}
+.plamp{border-radius:50%;border:2px solid #6b7785}
+.pnav{position:absolute;left:0;right:0;bottom:0;display:flex;gap:4px;padding:4px}
+.pnav div{flex:1;display:flex;align-items:center;justify-content:center;font-weight:700;border-radius:6px;border:1.5px solid #6b7785;cursor:pointer}
+.phead{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;padding:0 8px;gap:10px;font-weight:700}
+.palm{flex:1;height:70%;display:flex;align-items:center;padding:0 10px;border-radius:4px;cursor:pointer;overflow:hidden;white-space:nowrap}
+.palm.act{animation:bl .8s steps(2) infinite}@keyframes bl{50%{opacity:.45}}
+.pinp{border:1.5px solid #6b7785;border-radius:4px;gap:4px;justify-content:space-between;padding:0 4px}
+.pinp input{width:55%;font:inherit;border:1px solid #6b7785;border-radius:3px;background:#fff;color:#000;height:80%}
+/* LCD */
+#lcd{background:#7a9a3c;color:#1b2a0a;font:700 34px/1.15 "Courier New",monospace;padding:14px 18px;border-radius:10px;border:6px solid #333;letter-spacing:3px;white-space:pre;display:inline-block;box-shadow:inset 0 0 18px rgba(0,0,0,.45)}
+#lcd.off{background:#506628;color:#33451a;filter:brightness(.7)}
+.kb{display:flex;gap:8px;margin-top:10px}.kb button{width:62px;height:46px;font-size:18px;border-radius:8px;border:2px solid var(--bd);background:var(--svgbg);color:var(--tx);cursor:pointer;font-weight:700}.kb button:active{background:var(--ac);color:#fff}
+/* ergonomie */
+.sw{display:inline-block;width:46px;height:30px;border-radius:5px;margin:2px;border:1px solid rgba(0,0,0,.3)}
+.scr{background:#e9ecef;color:#222;border-radius:8px;padding:10px;font:13px Arial}
+.cell{display:inline-block;min-width:92px;padding:6px 8px;margin:3px;border-radius:5px;text-align:center;cursor:pointer;font-weight:700}
+#fitt{position:relative;height:260px;background:var(--svgbg);border-radius:8px;overflow:hidden}
+#fitt .tg{position:absolute;background:var(--ac);border-radius:6px;cursor:pointer}
+.mock{border:2px solid #555;border-radius:10px;background:#dfe3e8;color:#111;font:14px Arial;padding:0;overflow:hidden;max-width:520px}
+.mock .top{background:#2b3a4a;color:#fff;padding:6px 10px;display:flex;justify-content:space-between}
+.mock .body{padding:10px;min-height:210px}.mock button{font:inherit;padding:8px 10px;margin:3px;border:1.5px solid #555;border-radius:6px;background:#fff;cursor:pointer}
+.mock .alm{background:#d23c3c;color:#fff;padding:5px 10px;cursor:pointer}
+</style></head><body>
+<header>
+<a href="../../">← Laboratoare</a>
+<h1>Lucrarea 6 – Interfețe om-mașină (HMI)</h1>
+<p>MSP2101 · proiectare, ergonomie, HMI local cu LCD, panou tactil (Siemens KTP), HMI web · stația de biogaz</p>
+</header>
+<nav id="tabs">
+<button data-t="t1" class="on">1. Constructor de panou HMI</button>
+<button data-t="t2">2. Ergonomie și culori</button>
+<button data-t="t3">3. Meniu LCD 16×2</button>
+<button data-t="t4">4. Test de utilizabilitate</button>
+<button data-t="t5">5. Desfășurare</button>
+</nav>
+<main>
+
+<section id="t1" class="on">
+<div class="g2">
+<div>
+<div class="card"><h3>Panou virtual</h3>
+<div class="inl" style="margin-bottom:8px">
+<select id="psize" style="width:auto"><option value="800x480">KTP700 Basic (7″, 800×480)</option><option value="480x272">KTP400 Basic (4,3″, 480×272)</option></select>
+<select id="ptheme" style="width:auto"><option value="gray">Gri deschis (ISA-101)</option><option value="dark">Închis</option><option value="blue">Albastru saturat</option></select>
+<button class="b" id="mEdit">Editare</button><button class="b n" id="mRun">Rulare</button>
+</div>
+<div class="inl" style="margin-bottom:8px" id="pgbar"></div>
+<div id="pwrap"><div id="panel"></div></div>
+<div class="inl" style="margin-top:8px">
+<button class="b n s" data-add="text">+ Text</button><button class="b n s" data-add="value">+ Valoare</button><button class="b n s" data-add="bar">+ Bară</button><button class="b n s" data-add="lamp">+ Lampă</button><button class="b n s" data-add="button">+ Buton</button><button class="b n s" data-add="input">+ Câmp de intrare</button><button class="b n s" data-add="alarmlist">+ Listă alarme</button>
+</div>
+<div class="inl" style="margin-top:8px"><button class="b n s" id="pEx">Încarcă panou exemplu</button><button class="b n s" id="pClr">Golește</button><button class="b n s" id="pExp">Exportă JSON</button><button class="b n s" id="pImp">Importă JSON</button></div>
+<textarea id="pjson" rows="2" style="margin-top:6px;font:12px monospace" placeholder="JSON-ul panoului"></textarea>
+</div></div>
+<div>
+<div class="card"><h3>Șablon (apare pe toate paginile)</h3>
+<div class="row"><label><span><input type="checkbox" id="tplH" checked> Antet cu linie de alarmă</span></label></div>
+<div class="row"><label><span><input type="checkbox" id="tplN" checked> Bară de navigare între pagini</span></label></div></div>
+<div class="card"><h3>Proprietăți</h3><div id="props"><span class="mut">Selectați un element în modul Editare.</span></div></div>
+<div class="card"><h3>Evaluare ergonomică</h3><div class="kv" id="score"></div><ul class="chk" id="chk"></ul><button class="b s" id="chkb">Evaluează</button></div>
+</div></div>
+</section>
+
+<section id="t2">
+<div class="g3">
+<div class="card"><h3>A. Contrast (WCAG)</h3>
+<div class="inl"><label>Text <input type="color" id="cfg" value="#1a1a1a"></label><label>Fundal <input type="color" id="cbg" value="#d9dde2"></label></div>
+<div id="cview" style="margin:10px 0;padding:14px;border-radius:8px;font:700 20px Arial">Temperatură 38,2 °C</div>
+<div class="kv" id="cout"></div>
+<small>Raport de contrast = (L1 + 0,05)/(L2 + 0,05), cu L luminanța relativă. Recomandare: ≥ 4,5 pentru text normal, ≥ 3 pentru text mare și simboluri; pe ecrane industriale, mai mult.</small>
+<table style="margin-top:8px" id="isa"></table></div>
+<div class="card"><h3>B. Daltonism</h3>
+<div class="inl"><select id="cb" style="width:auto"><option value="none">Vedere normală</option><option value="protan">Protanopie</option><option value="deutan">Deuteranopie</option><option value="tritan">Tritanopie</option></select></div>
+<svg width="0" height="0" style="position:absolute"><defs>
+<filter id="f_protan"><feColorMatrix type="matrix" values="0.567 0.433 0 0 0  0.558 0.442 0 0 0  0 0.242 0.758 0 0  0 0 0 1 0"/></filter>
+<filter id="f_deutan"><feColorMatrix type="matrix" values="0.625 0.375 0 0 0  0.7 0.3 0 0 0  0 0.3 0.7 0 0  0 0 0 1 0"/></filter>
+<filter id="f_tritan"><feColorMatrix type="matrix" values="0.95 0.05 0 0 0  0 0.433 0.567 0 0  0 0.475 0.525 0 0  0 0 0 1 0"/></filter></defs></svg>
+<div id="cbview" class="scr" style="margin-top:8px">
+<b>Varianta 1 – doar culoare</b><br>
+<span class="cell" style="background:#1e9e5a;color:#fff">P101</span><span class="cell" style="background:#d23c3c;color:#fff">P102</span><span class="cell" style="background:#1e9e5a;color:#fff">P103</span><br>
+<b>Varianta 2 – culoare + formă + text</b><br>
+<span class="cell" style="background:#1e9e5a;color:#fff">● P101 PORNIT</span><span class="cell" style="background:#d23c3c;color:#fff">▲ P102 DEFECT</span><span class="cell" style="background:#1e9e5a;color:#fff">● P103 PORNIT</span></div>
+<small>Aproximativ 8 % dintre bărbați au o deficiență de percepție a culorilor roșu–verde. Culoarea nu trebuie să fie singurul purtător de informație.</small></div>
+<div class="card"><h3>C. Legea lui Fitts</h3>
+<div class="row"><label>Distanța D <b id="v_D"></b></label><input id="fD" type="range" min="50" max="700" value="300"></div>
+<div class="row"><label>Lățimea țintei W <b id="v_W"></b></label><input id="fW" type="range" min="10" max="120" value="40"></div>
+<div class="kv" id="fout"></div>
+<small>MT = a + b·log₂(D/W + 1), aici a = 0,1 s, b = 0,15 s/bit (valori tipice pentru deget/mouse). Ținte mari și apropiate se ating mai repede și cu mai puține erori.</small>
+<div class="inl" style="margin:8px 0"><button class="b s" id="fstart">Pornește testul (3 mărimi × 6 atingeri)</button></div>
+<div id="fitt"></div><div id="fres" class="mut" style="margin-top:6px"></div></div>
+<div class="card"><h3>D. Găsește anomalia: curcubeu sau ierarhie</h3>
+<div class="inl"><select id="stl" style="width:auto"><option value="rainbow">Stil colorat (fiecare mărime are culoarea ei)</option><option value="hp">Stil sobru (gri, culoare doar pentru anormal)</option></select><button class="b s" id="astart">Începe (6 probe)</button></div>
+<div id="aview" class="scr" style="margin-top:8px;min-height:170px"></div><div id="ares" class="mut" style="margin-top:6px"></div></div>
+</div>
+</section>
+
+<section id="t3">
+<div class="g2" style="grid-template-columns:minmax(0,1fr) minmax(260px,1fr)">
+<div class="card"><h3>HMI local: LCD 16×2 și patru butoane</h3>
+<div id="lcd">                \n                </div>
+<div class="kb"><button id="kU" title="↑">▲</button><button id="kD" title="↓">▼</button><button id="kO" title="OK">OK</button><button id="kB" title="Înapoi">◄</button></div>
+<small>Tastatură: ↑ ↓ Enter Esc. Apăsarea lungă repetă (accelerat). Prima apăsare după stingerea iluminării doar o aprinde.</small>
+<div class="kv" id="lout"></div>
+<div class="row"><label><span><input type="checkbox" id="lcode" checked> Cere cod de acces (1234) pentru modificări</span></label></div>
+<div class="row"><label>Viteza procesului</label><select id="lspd"><option value="1">1×</option><option value="10" selected>10×</option><option value="40">40×</option></select></div>
+</div>
+<div class="card"><h3>Mașina de stări a meniului</h3>
+<pre class="code" id="lfsm" style="font-size:12px"></pre>
+<small>Aceeași mașină de stări este implementată în sketch-ul <code>08_hmi_lcd_menu</code> pentru Arduino Uno cu un LCD HD44780 real.</small>
+<div class="row"><button class="b s n" id="lreset">Resetează contoarele</button></div></div>
+</div>
+</section>
+
+<section id="t4">
+<div class="g2" style="grid-template-columns:minmax(0,1fr) minmax(260px,1fr)">
+<div class="card"><h3>Test de utilizabilitate: sarcini cronometrate</h3>
+<div class="inl" style="margin-bottom:8px"><label>Interfața <select id="uv" style="width:auto"><option value="A">A – meniuri imbricate</option><option value="B">B – navigare plată</option></select></label><label>Sarcina <select id="ut" style="width:auto"><option value="1">1. Confirmă alarma</option><option value="2">2. Setează consemnul la 40 °C</option><option value="3">3. Citește presiunea din gazometru</option></select></label><button class="b g" id="ustart">▶ Pornește sarcina</button></div>
+<div id="utask" class="mut" style="margin-bottom:6px"></div>
+<div class="mock" id="mock"></div>
+</div>
+<div>
+<div class="card"><h3>Rezultate</h3><div style="overflow:auto"><table id="utab"></table></div>
+<div class="inl" style="margin-top:8px"><button class="b s" id="ucsv">Descarcă CSV</button><button class="b s n" id="uclr">Șterge</button></div></div>
+<div class="card"><h3>Încărcare mentală (NASA-TLX simplificat)</h3>
+<div id="tlx"></div><div class="inl"><select id="tlxv" style="width:auto"><option value="A">Interfața A</option><option value="B">Interfața B</option></select><button class="b s" id="tlxb">Calculează</button></div><div id="tlxr" class="mut" style="margin-top:6px"></div></div>
+</div></div>
+</section>
+
+<section id="t5">
+<div class="card"><h3>Obiectivele lucrării</h3><ul>
+<li>Rolul HMI în supraveghere și conducere; tipuri de HMI: local (LCD), panou tactil, web.</li>
+<li>Principii de proiectare: ierarhia paginilor, linia de alarmă, culori (ISA-101), contrast, ținte tactile, consecvență.</li>
+<li>Măsurarea utilizabilității: timp, număr de atingeri, erori, încărcare mentală.</li>
+<li>Realizarea unui meniu cu mașină de stări pe microcontroler; HMI web cu acces la un proces real; panou Siemens KTP cu TIA Portal.</li></ul></div>
+<div class="card"><h3>A. Pe simulator (ședința 1)</h3><ol>
+<li><b>Contrast.</b> Verificați raportul de contrast al paletei ISA-101 din fila 2 și găsiți două perechi text/fundal care nu respectă 4,5:1.</li>
+<li><b>Daltonism.</b> Cu protanopie și deuteranopie, comparați cele două variante; descrieți ce informații se pierd.</li>
+<li><b>Fitts.</b> Calculați timpul pentru D = 500 px cu W = 20, 40 și 80 px; rulați testul și comparați valorile măsurate.</li>
+<li><b>Anomalia.</b> Rulați cele 6 probe în fiecare stil; comparați timpul mediu și explicați diferența.</li>
+<li><b>Panou HMI.</b> În fila 1 construiți un panou pentru KTP700 cu trei pagini (Proces, Alarme, Setări): valoarea TT101, bara LT101, lampa HTR101, linia de alarmă, lista de alarme, câmpul de consemn SP101 cu limite și confirmare. Atingeți cel puțin 90 % la evaluare. Explicați fiecare criteriu nerespectat de varianta inițială.</li>
+<li><b>Meniu LCD.</b> Parcurgeți meniul din fila 3: numărați atingerile necesare pentru a schimba consemnul cu și fără cod de acces. Propuneți o modificare care reduce numărul de atingeri fără a compromite securitatea.</li>
+<li><b>Utilizabilitate.</b> Executați cele trei sarcini în interfețele A și B (ordinea alternată între studenți) și completați chestionarul. Comparați timpii, atingerile și încărcarea mentală.</li></ol></div>
+<div class="card"><h3>B. HMI local cu LCD pe Arduino (ședința 2)</h3>
+<p>Sketch: <code>arduino/08_hmi_lcd_menu</code>. Cablaj: LCD HD44780 16×2 în mod 4 biți (RS 12, E 11, D4 5, D5 4, D6 3, D7 2; contrast cu potențiometru de 10 kΩ; iluminare la 5 V prin 220 Ω); butoane între GND și A1 (SUS), A2 (JOS), A3 (OK), A4 (ÎNAPOI), cu INPUT_PULLUP; LM35 pe A0; releu/LED pe D8. Se verifică: afișarea la pornire, editarea consemnului, histerezisul, codul de acces, ieșirea automată din meniu după 20 s, stingerea iluminării. Măsurați cu cronometrul timpul pentru schimbarea consemnului și comparați cu emulatorul.</p></div>
+<div class="card"><h3>C. HMI web (browser, telefon)</h3>
+<pre class="code">cd webhmi
+python hmi_server.py --demo                       # fără echipament, proces simulat
+python hmi_server.py --serial COM5                # RTU Arduino (sketch 07, lucrarea 4)
+python hmi_server.py --tcp 127.0.0.1:502          # prin gateway-ul din lucrarea 2
+# deschideți http://adresa-pc:8080 de pe telefon (aceeași rețea)</pre>
+<p>Pagina este adaptivă (telefon și calculator), afișează calitatea datelor și lista de alarme și permite scrierea consemnului cu PIN. Verificați: aspectul pe ecran îngust, comportamentul la pierderea legăturii cu RTU (valorile devin „???”, apare alarma), respingerea unui consemn în afara domeniului și a PIN-ului greșit. Notă de securitate: serverul este destinat rețelei de laborator; nu îl expuneți pe internet.</p></div>
+<div class="card"><h3>D. Panou Siemens KTP cu TIA Portal (S7-1215C)</h3><ol>
+<li>În proiectul PLC adăugați un dispozitiv HMI: <i>KTP700 Basic PN</i> (sau modelul din laborator); în asistent alegeți pagina inițială, antetul cu alarme și bara de navigare, apoi conectați HMI la PLC în <i>Devices &amp; Networks</i> (conexiune HMI integrată prin Profinet).</li>
+<li>Creați pagini: Proces, Alarme, Setări. Pe Proces folosiți câmpuri I/O (output) legate de variabilele PLC (Temp_x10 cu formatul 999.9 prin scalare), bară pentru nivel, simboluri pentru stări.</li>
+<li>Scalarea: variabilele întregi în zecimi de grad se afișează cu câmp I/O cu 1 zecimală și „Shift decimal point”; verificați limitele de intrare pentru consemn (150…600).</li>
+<li>Alarme: definiți alarme discrete/analogice, clase de alarmă (Erori, Avertismente), fereastra de alarme și indicatorul de alarmă în antet.</li>
+<li>Administrare utilizatori: grupuri Operator/Inginer, câmp de consemn protejat prin autorizare.</li>
+<li>Compilați și încărcați în panou sau rulați în simulatorul de runtime; comparați cu panoul construit în simulator.</li></ol>
+<small>Denumirile exacte ale meniurilor depind de versiunea TIA Portal; pașii nu au fost parcurși pe echipamentul laboratorului.</small></div>
+<div class="card"><h3>Întrebări de control</h3><ol>
+<li>Care sunt funcțiile unui HMI? Prin ce diferă de SCADA?</li>
+<li>De ce linia de alarmă trebuie să fie vizibilă pe toate paginile?</li>
+<li>Ce este o mașină de stări și de ce se potrivește unui meniu LCD?</li>
+<li>Ce dimensiune minimă recomandați pentru o țintă tactilă? Argumentați cu legea lui Fitts.</li>
+<li>De ce culoarea nu trebuie să fie singurul purtător de informație?</li>
+<li>Ce înseamnă un stil „high performance” (ISA-101) și ce avantaje arată testul din fila 2?</li>
+<li>Cum se protejează scrierea unui consemn într-un HMI (limite, confirmare, autorizare)?</li>
+<li>Ce metrici se folosesc pentru utilizabilitate?</li></ol></div>
+<div class="card"><h3>Referat</h3>
+<div class="row"><label>Nume și prenume / grupa</label><input type="text" id="r_nm"></div>
+<div class="row"><label>Rezultate A1–A7</label><textarea id="r_a" rows="7"></textarea></div>
+<div class="row"><label>Rezultate B–D și concluzii</label><textarea id="r_b" rows="5"></textarea></div>
+<button class="b" id="dl">Descarcă referatul (.txt, cu panoul și rezultatele testului)</button></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body></html>
