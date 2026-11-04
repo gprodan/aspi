@@ -1,0 +1,12 @@
+﻿tag;tip;descriere;unitate;min;max;adresa_PLC;pin_Uno
+PB101;DI;Buton START (contact NO);;;;%I0.0;2
+PB102;DI;Buton STOP / RESET (contact NO);;;;%I0.1;3
+ES101;DI;Oprire de urgență (în program 1 = apăsată);;;;%I0.2;4
+LSL101;DI;Senzor nivel minim (1 = lichid peste prag);;;;%I0.3;5
+LSH101;DI;Senzor nivel maxim (1 = rezervor plin);;;;%I0.4;6
+TT101;AI;Temperatură rezervor (Pt100 + traductor 4–20 mA);°C;0;100;%IW64;A0
+XV101;DO;Electrovană de umplere;;;;%Q0.0;8
+XV102;DO;Electrovană de golire;;;;%Q0.1;9
+M101;DO;Contactor agitator;;;;%Q0.2;10
+EH101;DO;Contactor rezistență de încălzire;;;;%Q0.3;11
+HL101;DO;Lampă de avarie;;;;%Q0.4;12

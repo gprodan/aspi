@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucrarea 7 – Dezvoltarea aplicațiilor de automatizare</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--tx:#14202e;--mut:#5a6b7e;--ac:#1f6fd1;--bd:#dde4ec;--ok:#1e9e5a;--warn:#e08a00;--bad:#d23c3c;--svgbg:#eef3f9;--code:#0f1720;--codetx:#d7e3f2}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#1b2633;--tx:#e6edf3;--mut:#8b9bb0;--ac:#4aa3ff;--bd:#2c3b4e;--ok:#3ec47e;--warn:#f0a020;--bad:#ef5b5b;--svgbg:#162130;--code:#0b1118}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:14px 16px 0;max-width:1200px;margin:0 auto}
+header a{color:var(--ac);font-size:13px;text-decoration:none}
+h1{font-size:20px;margin:4px 0 2px}header p{margin:0 0 10px;color:var(--mut);font-size:13px}
+nav{display:flex;gap:4px;flex-wrap:wrap;max-width:1200px;margin:0 auto;padding:0 16px;border-bottom:1px solid var(--bd)}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;color:var(--mut);font:inherit;font-weight:600;cursor:pointer}
+nav button.on{color:var(--ac);border-color:var(--ac)}
+main{max-width:1200px;margin:0 auto;padding:14px 16px 24px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:15px}
+.g2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:14px}@media(max-width:950px){.g2{grid-template-columns:1fr}}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.row{margin:8px 0}.row label{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:13px}.row b{color:var(--tx)}
+input[type=range]{width:100%}
+select,input[type=number],input[type=text],textarea{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:5px 6px;font:inherit;max-width:100%}
+select,input[type=text],textarea{width:100%}
+button.b{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer;font-size:14px}
+button.b.g{background:var(--ok)}button.b.r{background:var(--bad)}button.b.n{background:var(--mut)}button.b.s{padding:3px 8px;font-size:12px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0}
+.kv div{background:var(--svgbg);border-radius:8px;padding:6px 10px}.kv span{display:block;font-size:12px;color:var(--mut)}.kv b{font-size:16px;font-variant-numeric:tabular-nums}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+pre.code{background:var(--code);color:var(--codetx);border-radius:8px;padding:10px;font:12.5px/1.45 ui-monospace,Consolas,monospace;overflow:auto;margin:0;white-space:pre}
+small,.mut{color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:4px 6px;text-align:left}
+.inl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chk{padding-left:4px}.chk li{list-style:none;margin:3px 0}.chk li:before{content:"○ ";color:var(--mut)}.chk li.y:before{content:"✔ ";color:var(--ok)}.chk li.n:before{content:"✖ ";color:var(--bad)}
+.toast{position:fixed;right:14px;bottom:14px;background:var(--card);border:1px solid var(--bad);padding:8px 12px;border-radius:8px;max-width:340px;display:none;z-index:9}
+/* lucrarea 7 */
+.vph{cursor:pointer}.vph rect{fill:var(--card);stroke:var(--ac);stroke-width:1.5}.vph.sel rect{fill:var(--ac)}.vph.sel text{fill:#fff}.vph text{fill:var(--tx);font:600 12px system-ui}
+.vph.done rect{stroke:var(--ok);stroke-width:2.5}
+.step rect{fill:var(--card);stroke:var(--mut);stroke-width:1.5}.step.act rect{fill:var(--ok);stroke:var(--ok)}.step.act text.n{fill:#fff}.step.fl rect{stroke:var(--bad)}
+.step text{fill:var(--tx);font:600 12px system-ui}.step.act text{fill:#fff}
+.sacts rect{fill:var(--svgbg);stroke:var(--mut)}.sacts text{fill:var(--tx);font:11px ui-monospace,Consolas,monospace}
+.tbar line{stroke:var(--tx);stroke-width:2}.tcond{fill:var(--ac);font:600 11px ui-monospace,Consolas,monospace}
+.lamp{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--bd);border:1px solid var(--mut);vertical-align:-2px;margin-right:3px}.lamp.on{background:var(--ok);border-color:var(--ok)}.lamp.red.on{background:var(--bad);border-color:var(--bad)}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-weight:700;font-size:12px;color:#fff}.badge.ok{background:var(--ok)}.badge.no{background:var(--bad)}.badge.na{background:var(--mut)}
+table.ed td{padding:2px 3px}table.ed input,table.ed select,table.ed textarea{padding:3px 4px;font-size:13px}table.ed textarea{font:12px ui-monospace,Consolas,monospace;resize:vertical;min-height:34px}
+.tw{overflow:auto}
+.opt{display:block;margin:4px 0;cursor:pointer}.opt input{margin-right:6px}
+.prog{height:10px;background:var(--svgbg);border-radius:5px;overflow:hidden}.prog i{display:block;height:100%;background:var(--ok);width:0}
+canvas{max-width:100%;background:var(--svgbg);border-radius:8px}
+.bar{display:flex;align-items:center;gap:6px;margin:3px 0;font-size:13px}.bar i{display:block;height:14px;background:var(--ac);border-radius:3px}
+</style></head><body>
+<header>
+<a href="../../">← Laboratoare</a>
+<h1>Lucrarea 7 – Dezvoltarea aplicațiilor de automatizare</h1>
+<p>MSP2101 · ciclul de dezvoltare, listă I/E, GRAFCET → cod SCL/C++, testare automată și versionare · stația cu rezervor agitat</p>
+</header>
+<nav id="tabs">
+<button data-t="t1" class="on">1. Ciclul de dezvoltare</button>
+<button data-t="t2">2. Listă I/E și tag-uri</button>
+<button data-t="t3">3. Editor GRAFCET și simulare</button>
+<button data-t="t4">4. Testare și depanare</button>
+<button data-t="t5">5. Desfășurare</button>
+</nav>
+<main>
+
+<section id="t1" class="on">
+<div class="g2">
+<div class="card"><h3>Modelul în V al unei aplicații de automatizare</h3>
+<small>Apăsați pe o fază. Fiecare fază din stânga are o verificare pereche în dreapta: ce se specifică se testează la același nivel.</small>
+<svg id="vsvg" viewBox="0 0 700 320" width="100%" style="margin-top:6px"></svg>
+<div class="inl"><small>Progres checklist: <b id="vprog">0 %</b></small><div class="prog" style="flex:1;min-width:120px"><i id="vbar"></i></div><button class="b n s" id="vreset">Resetează</button></div>
+</div>
+<div class="card" id="vdet"></div>
+</div>
+<div class="card"><h3>Cât costă un defect descoperit târziu (ordin de mărime)</h3>
+<div id="vcost"></div><small>Valorile sunt ilustrative: regula empirică din ingineria software, nu măsurători pe acest proiect. Ideea de reținut: aceeași eroare costă de zeci de ori mai mult la punerea în funcțiune decât la specificare.</small></div>
+</section>
+
+<section id="t2">
+<div class="card"><h3>Lista de intrări/ieșiri și convenția de nume</h3>
+<div class="inl" style="margin-bottom:8px"><button class="b s" id="ioAdd">+ semnal</button><button class="b n s" id="ioEx">Exemplu: rezervor agitat</button><button class="b r s" id="ioClr">Golește</button><button class="b g s" id="ioCsv">Descarcă CSV</button>
+<small>Convenție: 2–4 litere ISA-5.1 + 3 cifre (TT101, LSH101, XV101). Adresele se atribuie automat pentru S7-1215C (%I0.x, %Q0.x, %IW64…) și pentru Arduino Uno.</small></div>
+<div class="tw"><table class="ed" id="ioT"></table></div>
+<div id="ioChk" style="margin-top:8px"></div></div>
+<div class="g3">
+<div class="card"><h3>Etichete PLC (de copiat în TIA Portal)</h3><pre class="code" id="ioPlc" style="max-height:300px"></pre></div>
+<div class="card"><h3>Definiții Arduino</h3><pre class="code" id="ioArd" style="max-height:300px"></pre></div>
+<div class="card"><h3>Scalarea unei intrări analogice</h3>
+<div class="row"><label>Canal analogic<b id="scN"></b></label><select id="scSel"></select></div>
+<div class="row"><label>Cod brut 0…27648<b id="scRv">13824</b></label><input type="range" id="scR" min="0" max="27648" value="13824"></div>
+<div class="kv"><div><span>Valoare inginerească</span><b id="scV"></b></div><div><span>Rezoluție</span><b id="scQ"></b></div></div>
+<label class="inl"><input type="checkbox" id="sc420"> semnal 4–20 mA (cod brut 5530…27648)</label><pre class="code" id="scCode"></pre><small>NORM_X/SCALE_X sunt instrucțiunile standard din TIA Portal; rezoluția e domeniul împărțit la 27648 de pași (limita fizică a convertorului este mai mică).</small></div>
+</div>
+</section>
+
+<section id="t3">
+<div class="g2">
+<div>
+<div class="card"><h3>Editorul de secvență (GRAFCET)</h3>
+<div class="inl"><label>SP [°C] <input type="number" id="pSP" step="0.5" style="width:72px"></label><label>HOLD [s] <input type="number" id="pHOLD" step="1" style="width:72px"></label><label>Pas de avarie <select id="pFault" style="width:80px"></select></label>
+<button class="b n s" id="mEx">Model implicit</button><button class="b n s" id="mJson">Export JSON</button></div>
+<h3 style="margin-top:10px">Pași (acțiuni: <code>IEȘIRE = expresie</code>, câte una pe linie)</h3>
+<div class="tw"><table class="ed" id="stT"></table></div><button class="b s" id="stAdd" style="margin-top:6px">+ pas</button>
+<h3 style="margin-top:10px">Tranziții (<code>*</code> = din orice pas; operatori <code>&amp;&amp; || ! &gt;= &lt;=</code>)</h3>
+<div class="tw"><table class="ed" id="trT"></table></div><button class="b s" id="trAdd" style="margin-top:6px">+ tranziție</button>
+<div id="mChk" style="margin-top:8px"></div></div>
+<div class="card"><h3>Cod generat din model</h3>
+<div class="inl"><button class="b s" id="gScl">SCL (S7-1215C)</button><button class="b s" id="gCpp">C++ (Arduino)</button><button class="b n s" id="gCopy">Copiază</button><button class="b g s" id="gDl">Descarcă</button></div>
+<pre class="code" id="gOut" style="max-height:380px;margin-top:8px"></pre></div>
+</div>
+<div>
+<div class="card"><h3>Simulare pe instalație</h3>
+<div class="inl"><button class="b g" id="sRun">▶ Pornește</button><button class="b n" id="sRst">Reset</button><label>viteză <select id="sSpd" style="width:70px"><option>1</option><option>5</option><option selected>10</option><option>30</option></select></label></div>
+<div class="inl" style="margin-top:8px"><button class="b s" id="bStart">START (PB101)</button><button class="b s n" id="bStop">STOP/RESET (PB102)</button><label><input type="checkbox" id="bEs"> ES101 apăsat</label></div>
+<div class="inl" style="margin-top:4px"><small>Defecte:</small><label><input type="checkbox" id="fLsh"> LSH101 blocat 0</label><label><input type="checkbox" id="fLsl"> LSL101 blocat 1</label><label><input type="checkbox" id="fTt"> TT101 înghețat</label></div>
+<div class="kv"><div><span>Pas activ</span><b id="kStep"></b></div><div><span>Timp în pas</span><b id="kT"></b></div><div><span>Nivel</span><b id="kL"></b></div><div><span>Temperatură</span><b id="kTT"></b></div></div>
+<div id="kLamps"></div>
+<canvas id="cv" width="520" height="180"></canvas>
+<small>Albastru: temperatură [°C] · verde: nivel [%] · linia punctată: SP</small>
+</div>
+<div class="card"><h3>Diagrama de funcționare</h3><svg id="sfcSvg" width="100%"></svg><div id="sfcX" class="mut" style="font-size:12px"></div></div>
+<div class="card"><h3>Jurnal tranziții</h3><pre class="code" id="sLog" style="max-height:140px"></pre></div>
+</div>
+</div>
+</section>
+
+<section id="t4">
+<div class="card"><h3>Teste automate pe modelul curent</h3>
+<div class="inl"><button class="b" id="tRun">▶ Rulează cele 7 teste</button><b id="tSum"></b><small>Testele folosesc același model ca fila 3; modificați-l și rulați din nou.</small></div>
+<div class="tw"><table id="tT" style="margin-top:8px"></table></div>
+<canvas id="tCv" width="640" height="190" style="margin-top:8px"></canvas><div id="tTitle" class="mut" style="font-size:12px"></div></div>
+<div class="card"><h3>Testare prin mutații: cât de bun este setul de teste?</h3>
+<small>Se introduc deliberat defecte tipice în model. Un defect „detectat” face să cadă cel puțin un test; unul „scăpat” arată o lipsă în setul de teste.</small>
+<div class="inl" style="margin:8px 0"><button class="b" id="mRun">▶ Rulează mutanții</button><b id="mSum"></b></div><div class="tw"><table id="mT"></table></div></div>
+<div class="card"><h3>Găsiți defectul în cod</h3><div id="bugs"></div></div>
+</section>
+
+<section id="t5">
+<div class="card"><h3>Desfășurarea lucrării (2 ședințe × 2 ore)</h3><ol id="ex"></ol></div>
+<div class="g3">
+<div class="card"><h3>Întrebări de control</h3><ol id="qs"></ol></div>
+<div class="card"><h3>Raport</h3><p>Raportul conține lista I/E, modelul GRAFCET (JSON), rezultatul celor 7 teste și matricea mutanților, cu starea checklist-ului din modelul în V.</p><button class="b g" id="rep">Descarcă raportul (.txt)</button></div>
+</div>
+</section>
+</main>
+<script src="sfc.js"></script>
+<script src="app.js"></script>
+</body></html>

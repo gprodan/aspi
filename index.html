@@ -101,7 +101,7 @@ const LABS=[
  {t:'Programare microcontrolere. IDE Arduino',href:'labs/lab4/',d:'Timer1 și PWM, ADC și senzori, mini-interpretor Arduino cu placă virtuală (histerezis, P, PI) și 7 sketch-uri pentru Uno.'},
  {t:'Software și programare. SCADA',href:'labs/lab5/',d:'Sinoptic cu alarme (ciclu ISA-18.2), rețea de achiziție Modbus cu calitatea datelor, editor de ecran, istoric cu compresie și punte spre ThingsBoard.'},
  {t:'Interfețe om-mașină (HMI)',href:'labs/lab6/',d:'Constructor de panou HMI cu evaluare ergonomică, contrast și daltonism, legea lui Fitts, meniu LCD 16×2, test de utilizabilitate, HMI web și sketch Arduino.'},
- {t:'Dezvoltarea aplicațiilor de automatizare'}];
+ {t:'Dezvoltarea aplicațiilor de automatizare',href:'labs/lab7/',d:'Ciclul în V, listă I/E cu verificări, editor GRAFCET cu simulare și generare SCL/C++, 7 teste automate cu defecte injectate, testare prin mutații, sketch Arduino, test Python (SIL) și Git.'}];
 const CURS=['Arhitecturi pentru sistemele de automatizare. Considerații generale','Sisteme informatice de automatizare','Subsistemul de I/E: senzori, actuatoare, regulatoare automate','Microcontrolere','Software și programare. SCADA','Interfețe om-mașină (HMI)','Dezvoltarea aplicațiilor de automatizare'];
 document.getElementById('labs').innerHTML=LABS.map((l,i)=>{
  const body='<span class="n">Lucrarea '+(i+1)+' · 4 ore</span><b>'+l.t+'</b>'+(l.d?'<p>'+l.d+'</p>':'')+'<span class="go">'+(l.href?'Deschide aplicația →':'În pregătire')+'</span>';

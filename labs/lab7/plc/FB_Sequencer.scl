@@ -1,0 +1,97 @@
+// ============================================================
+// FB_Sequencer – secvența rezervorului agitat (lucrarea 7, ASPI)
+// Generat din editorul GRAFCET al aplicației web; model implicit.
+// Import în TIA Portal: Add new external file → Generate blocks from source.
+// Neverificat pe CPU-ul laboratorului: verificați compilarea și instrucțiunea TIME_TCK.
+// ============================================================
+// Generat de aplicația lucrării 7 (editor SFC). Verificați în TIA Portal înainte de utilizare.
+FUNCTION_BLOCK "FB_Sequencer"
+{ S7_Optimized_Access := 'TRUE' }
+VAR_INPUT
+   ES101 : Bool;
+   PB101 : Bool;
+   LSL101 : Bool;
+   LSH101 : Bool;
+   TT101 : Real;
+   PB102 : Bool;
+   SP : Real := 37.0;  // parametru
+   HOLD : Real := 20.0;  // parametru
+END_VAR
+VAR_OUTPUT
+   XV101 : Bool;
+   XV102 : Bool;
+   M101 : Bool;
+   EH101 : Bool;
+   HL101 : Bool;
+   Step : Int;
+END_VAR
+VAR
+   tEntry : DInt;
+   tMs : DInt;
+   t : Real;
+   prevStep : Int;
+END_VAR
+
+BEGIN
+// 1. timpul în pasul curent (secunde), din ceasul de sistem
+#tMs := TIME_TO_DINT(TIME_TCK()) - #tEntry;
+#t := DINT_TO_REAL(#tMs) / 1000.0;
+
+// 2. tranziții globale (au prioritate), apoi tranzițiile pasului activ
+IF (#ES101) AND #Step <> 5 THEN #Step := 5; END_IF;  // → S9
+CASE #Step OF
+   0: // S0 Repaus
+      IF #PB101 AND NOT #LSL101 THEN #Step := 1; // → S1
+      END_IF;
+   1: // S1 Umplere
+      IF #LSH101 THEN #Step := 2; // → S2
+      ELSIF #PB102 THEN #Step := 4; // → S4
+      ELSIF #t > 24.0 THEN #Step := 5; // timeout → S9
+      END_IF;
+   2: // S2 Încălzire
+      IF #TT101 >= #SP THEN #Step := 3; // → S3
+      ELSIF #PB102 THEN #Step := 4; // → S4
+      ELSIF #t > 60.0 THEN #Step := 5; // timeout → S9
+      END_IF;
+   3: // S3 Menținere
+      IF #t >= #HOLD THEN #Step := 4; // → S4
+      ELSIF #PB102 THEN #Step := 4; // → S4
+      END_IF;
+   4: // S4 Golire
+      IF NOT #LSL101 THEN #Step := 0; // → S0
+      ELSIF #t > 60.0 THEN #Step := 5; // timeout → S9
+      END_IF;
+   5: // S9 Avarie
+      IF #PB102 AND NOT #ES101 THEN #Step := 0; // → S0
+      END_IF;
+END_CASE;
+
+// 3. la schimbarea pasului se repornește cronometrul pasului
+IF #Step <> #prevStep THEN
+   #tEntry := TIME_TO_DINT(TIME_TCK());
+   #prevStep := #Step;
+   #t := 0.0;
+END_IF;
+
+// 4. ieșiri: acțiuni nememorate, implicit FALSE
+#XV101 := FALSE;
+#XV102 := FALSE;
+#M101 := FALSE;
+#EH101 := FALSE;
+#HL101 := FALSE;
+CASE #Step OF
+   1: // S1 Umplere
+      #XV101 := TRUE;
+   2: // S2 Încălzire
+      #M101 := TRUE;
+      #EH101 := #TT101 < #SP;
+   3: // S3 Menținere
+      #M101 := TRUE;
+      #EH101 := #TT101 < #SP - 0.5;
+   4: // S4 Golire
+      #XV102 := TRUE;
+      #M101 := TRUE;
+   5: // S9 Avarie
+      #HL101 := TRUE;
+END_CASE;
+END_FUNCTION_BLOCK

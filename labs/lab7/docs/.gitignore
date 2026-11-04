@@ -1,0 +1,8 @@
+# fișiere generate / temporare
+__pycache__/
+*.pyc
+*.bak
+*.tmp
+# arhive de proiect TIA Portal (se păstrează separat sau cu Git LFS)
+*.zap*
+*.ap1*
