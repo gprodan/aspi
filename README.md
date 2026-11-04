@@ -6,6 +6,7 @@
 - Publicare: Settings → Pages → ramura `main`, folder `/ (root)`.
 
 - `labs/lab2/` – simulator PLC (SCL/Ladder) + Modbus; `labs/lab2/arduino/rtu_biogaz/` – sketch Arduino (slave Modbus RTU); `labs/lab2/gateway/modbus_gateway.py` – gateway Modbus TCP→RTU (pip install pyserial)
+- `labs/lab3/` – senzori, actuatoare, regulatoare: aplicație cu 4 file (`app.js`) și reactorul 3D (`reactor.html`); `labs/lab3/plc/FB_PI.scl` (regulator în SCL, S7-1215C); `labs/lab3/python/identificare_pid.py` (identificare FOPDT și acordare)
 - `labs/lab4/` – Arduino: calculator Timer1/PWM, ADC și senzori, mini-interpretor C++ cu placă virtuală (`arduino.js`, `tools.js`); `labs/lab4/arduino/01…07_*/` – sketch-uri pentru Arduino Uno (millis, senzori, histerezis, Timer1, INT0, PI, Modbus RTU)
 - `labs/lab5/` – SCADA: sinoptic, alarme, rețea de achiziție, editor de ecran, istoric (`engine.js`, `ui.js`); `labs/lab5/thingsboard/tb_bridge.py` – punte Modbus → ThingsBoard (pip install pyserial paho-mqtt)
 - `labs/lab6/` – HMI: constructor de panou, ergonomie, emulator LCD, test de utilizabilitate (`app.js`); `labs/lab6/webhmi/hmi_server.py` + `hmi.html` – HMI web (python hmi_server.py --demo); `labs/lab6/arduino/08_hmi_lcd_menu/` – meniu LCD pentru Uno

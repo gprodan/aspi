@@ -1,0 +1,84 @@
+// ============================================================
+// FB_PI – regulator PI/PID cu anti-windup (lucrarea 3, ASPI)
+// Se apelează dintr-un OB cu întrerupere ciclică (ex. OB30, 100 ms); Ts = perioada ciclului în secunde.
+// Aceeași structură ca în simulatorul web: derivata pe măsurătoare (filtrată), integrator oprit la saturație.
+// Neverificat pe CPU-ul laboratorului: verificați compilarea și comportamentul în TIA Portal.
+// ============================================================
+FUNCTION_BLOCK "FB_PI"
+{ S7_Optimized_Access := 'TRUE' }
+VAR_INPUT
+   SP : Real;                 // consemn
+   PV : Real;                 // mărime măsurată, în unități inginerești
+   Kp : Real := 1.2;          // câștig proporțional
+   Ti : Real := 25.0;         // timp de integrare [s]; 0 = fără integrator
+   Td : Real := 0.0;          // timp de derivare [s]; 0 = fără derivată
+   Ts : Real := 0.1;          // perioada de eșantionare [s]
+   OutMin : Real := 0.0;
+   OutMax : Real := 100.0;
+   Auto : Bool := TRUE;       // TRUE = automat, FALSE = manual
+   ManOut : Real := 0.0;      // ieșire în manual
+END_VAR
+VAR_OUTPUT
+   Out : Real;                // comanda [%]
+   Err : Real;                // eroarea SP - PV
+   Saturated : Bool;
+END_VAR
+VAR
+   I : Real;                  // starea integratorului
+   dFilt : Real;              // termenul derivativ filtrat
+   pvPrev : Real;
+   first : Bool := TRUE;
+END_VAR
+VAR_TEMP
+   e : Real;
+   inc : Real;
+   alpha : Real;
+   u : Real;
+END_VAR
+
+BEGIN
+#e := #SP - #PV;
+#Err := #e;
+IF #first THEN
+   #pvPrev := #PV;
+   #first := FALSE;
+END_IF;
+
+IF #Auto THEN
+   // derivata pe măsurătoare, filtru de ordinul 1 cu constanta Td/10
+   IF #Td > 0.0 THEN
+      #alpha := #Ts / (#Td / 10.0 + #Ts);
+      #dFilt := #dFilt + #alpha * (-#Kp * #Td * (#PV - #pvPrev) / #Ts - #dFilt);
+   ELSE
+      #dFilt := 0.0;
+   END_IF;
+
+   IF #Ti > 0.0 THEN
+      #inc := #Kp * #e * #Ts / #Ti;
+   ELSE
+      #inc := 0.0;
+   END_IF;
+
+   #u := #Kp * #e + #I + #dFilt;
+   // anti-windup: nu se integrează în sensul care adâncește saturația
+   IF NOT ((#u >= #OutMax AND #inc > 0.0) OR (#u <= #OutMin AND #inc < 0.0)) THEN
+      #I := #I + #inc;
+   END_IF;
+
+   #u := #Kp * #e + #I + #dFilt;
+   #Saturated := (#u >= #OutMax) OR (#u <= #OutMin);
+   IF #u > #OutMax THEN
+      #u := #OutMax;
+   ELSIF #u < #OutMin THEN
+      #u := #OutMin;
+   END_IF;
+   #Out := #u;
+ELSE
+   // manual, cu preluare fără salt: integratorul urmărește ieșirea
+   #Out := LIMIT(MN := #OutMin, IN := #ManOut, MX := #OutMax);
+   #I := #Out - #Kp * #e;
+   #dFilt := 0.0;
+   #Saturated := FALSE;
+END_IF;
+#pvPrev := #PV;
+END_FUNCTION_BLOCK

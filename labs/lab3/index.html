@@ -1,331 +1,160 @@
 <!DOCTYPE html>
 <html lang="ro"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reactor cu reglare PID, 2 rezervoare de alimentare</title>
+<title>Lucrarea 3 – Senzori, actuatoare și regulatoare</title>
 <style>
-:root{--bg:#0f1720;--pn:#1b2633;--tx:#e6edf3;--mut:#8b9bb0;--ac:#3fb6ff}
+:root{--bg:#f4f7fb;--card:#fff;--tx:#14202e;--mut:#5a6b7e;--ac:#1f6fd1;--bd:#dde4ec;--ok:#1e9e5a;--warn:#e08a00;--bad:#d23c3c;--svgbg:#eef3f9;--code:#0f1720;--codetx:#d7e3f2}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#1b2633;--tx:#e6edf3;--mut:#8b9bb0;--ac:#4aa3ff;--bd:#2c3b4e;--ok:#3ec47e;--warn:#f0a020;--bad:#ef5b5b;--svgbg:#162130;--code:#0b1118}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:14px system-ui,sans-serif;overflow:hidden}
-#c{position:fixed;inset:0}
-#panel{position:fixed;top:10px;right:10px;width:310px;max-height:calc(100% - 20px);overflow:auto;background:var(--pn);border:1px solid #2c3b4e;border-radius:10px;padding:12px}
-h3{margin:0 0 8px;font-size:15px}
-.row{margin:8px 0}
-.row label{display:flex;justify-content:space-between;color:var(--mut)}
-.row b{color:var(--tx);font-variant-numeric:tabular-nums}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:14px 16px 0;max-width:1200px;margin:0 auto}
+header a{color:var(--ac);font-size:13px;text-decoration:none}
+h1{font-size:20px;margin:4px 0 2px}header p{margin:0 0 10px;color:var(--mut);font-size:13px}
+nav{display:flex;gap:4px;flex-wrap:wrap;max-width:1200px;margin:0 auto;padding:0 16px;border-bottom:1px solid var(--bd)}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;color:var(--mut);font:inherit;font-weight:600;cursor:pointer}
+nav button.on{color:var(--ac);border-color:var(--ac)}
+main{max-width:1200px;margin:0 auto;padding:14px 16px 24px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:15px}
+.g2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(260px,1fr);gap:14px}@media(max-width:950px){.g2{grid-template-columns:1fr}}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.row{margin:8px 0}.row label{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:13px}.row b{color:var(--tx)}
 input[type=range]{width:100%}
-.btns{display:flex;gap:6px}
-button{flex:1;padding:9px 4px;border:0;border-radius:6px;font-weight:700;color:#fff;cursor:pointer}
-#bs{background:#2e9e4f}#bt{background:#c78a12}#be{background:#d32f2f}
-#st{margin:8px 0;padding:6px;text-align:center;border-radius:6px;background:#26384a;font-weight:700}
-#st.RUN{background:#1f6b38}#st.ESTOP{background:#8e1b1b}
-#ws{display:flex;gap:6px}#ws input{flex:1;min-width:0;background:#0f1720;color:var(--tx);border:1px solid #2c3b4e;border-radius:6px;padding:6px}
-#ws button{flex:0 0 auto;background:#2a5d8a;padding:6px 10px}
-canvas#ch{width:100%;height:90px;background:#0f1720;border-radius:6px}
-small{color:var(--mut)}
-table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:2px 3px;text-align:right}th:first-child,td:first-child{text-align:left}select{width:100%;background:#0f1720;color:var(--tx);border:1px solid #2c3b4e;border-radius:6px;padding:5px}#bm{background:#6a4fb3;margin-top:6px}
+select,input[type=number],input[type=text],textarea{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:5px 6px;font:inherit;max-width:100%}
+select,input[type=text],textarea{width:100%}
+button.b{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer;font-size:14px}
+button.b.g{background:var(--ok)}button.b.r{background:var(--bad)}button.b.n{background:var(--mut)}button.b.s{padding:3px 8px;font-size:12px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0}
+.kv div{background:var(--svgbg);border-radius:8px;padding:6px 10px}.kv span{display:block;font-size:12px;color:var(--mut)}.kv b{font-size:16px;font-variant-numeric:tabular-nums}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+pre.code{background:var(--code);color:var(--codetx);border-radius:8px;padding:10px;font:12.5px/1.45 ui-monospace,Consolas,monospace;overflow:auto;margin:0;white-space:pre}
+small,.mut{color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:4px 6px;text-align:left}
+.inl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chk{padding-left:4px}.chk li{list-style:none;margin:3px 0}.chk li:before{content:"○ ";color:var(--mut)}.chk li.y:before{content:"✔ ";color:var(--ok)}.chk li.n:before{content:"✖ ";color:var(--bad)}
+.toast{position:fixed;right:14px;bottom:14px;background:var(--card);border:1px solid var(--bad);padding:8px 12px;border-radius:8px;max-width:340px;display:none;z-index:9}
+/* lucrarea 3 */
+.tw{overflow:auto}canvas{max-width:100%;background:var(--svgbg);border-radius:8px;display:block}
+.inl label{display:flex;align-items:center;gap:4px}
+.opt{display:block;margin:4px 0}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-weight:700;font-size:12px;color:#fff;background:var(--mut)}
+iframe{width:100%;height:78vh;border:1px solid var(--bd);border-radius:10px;background:#0f1720}
 </style></head><body>
-<div id="c"></div>
-<div id="panel">
-<a href="../../" style="color:#3fb6ff;font-size:12px;text-decoration:none">← Laboratoare</a>
-<h3>Panou de control</h3>
-<div class="btns"><button id="bs">START</button><button id="bt">STOP</button><button id="be">AU</button></div>
-<div id="st">OPRIT</div>
-<div class="row"><label>Nivel țintă (pot.) <b id="vsp"></b></label><input id="sp" type="range" min="0" max="100" step="0.5" value="60"></div>
-<div class="row"><label>Nivel curent <b id="vh"></b></label></div>
-<div class="row"><label>Kp <b id="vkp"></b></label><input id="kp" type="range" min="0" max="20" step="0.1" value="5"></div>
-<div class="row"><label>Ki <b id="vki"></b></label><input id="ki" type="range" min="0" max="2" step="0.01" value="0.3"></div>
-<div class="row"><label>Kd <b id="vkd"></b></label><input id="kd" type="range" min="0" max="10" step="0.1" value="1"></div>
-<div class="row"><label>Valvă golire (perturbație) <b id="vdr"></b></label><input id="dr" type="range" min="0" max="1" step="0.01" value="0.2"></div>
-<div class="row"><label>Alimentare totală (ieșire PID) <b id="vu"></b></label></div>
-<div class="row"><label>Rețetă proces</label><select id="rc"><option value="manual">Manuală</option><option value="r1">R1 stoechiometrică (60 °C)</option><option value="r2">R2 exces A (70 °C)</option><option value="r3">R3 temperatură joasă (40 °C)</option></select></div>
-<div class="row"><label>Debit A : B <b id="vxa"></b></label><input id="xa" type="range" min="0" max="1" step="0.01" value="0.5"></div>
-<div class="row"><label>Termostat rezistență <b id="vts"></b></label><input id="ts" type="range" min="20" max="90" step="1" value="60"></div>
-<div class="row"><label>Turație mixer <b id="vrp"></b></label><input id="rp" type="range" min="0" max="120" step="1" value="80"><button id="bm">MIXER</button></div>
-<table><tr><th></th><th>Niv %</th><th>c mol/L</th><th>ρ kg/m³</th><th>T °C</th></tr><tr id="ra"></tr><tr id="rb"></tr><tr id="rf"></tr></table>
-<small id="mx"></small>
-<canvas id="ch" width="300" height="90"></canvas>
-<div class="row"><label>Conexiune externă (WebSocket)</label>
-<div id="ws"><input id="url" value="ws://localhost:8765"><button id="cn">Conectare</button></div>
-<small id="wst">deconectat</small></div>
+<header>
+<a href="../../">← Laboratoare</a>
+<h1>Lucrarea 3 – Subsistemul de I/E: senzori, actuatoare, regulatoare automate</h1>
+<p>MSP2101 · lanț de măsurare, calibrare, valve și acționări, reglare ON/OFF–P–PI–PID, reactor 3D</p>
+</header>
+<nav id="tabs">
+<button data-t="t1" class="on">1. Senzori și semnale</button>
+<button data-t="t2">2. Actuatoare</button>
+<button data-t="t3">3. Regulatoare și reglaj</button>
+<button data-t="t4">4. Reactor 3D cu PID</button>
+<button data-t="t5">5. Desfășurare</button>
+</nav>
+<main>
+
+<section id="t1" class="on">
+<div class="g2">
+<div class="card"><h3>Lanțul de măsurare: mărime fizică → semnal → cod</h3>
+<div class="row"><label>Traductor</label><select id="sSel"></select></div>
+<div class="row"><label>Mărime măsurată <b id="sXv"></b></label><input type="range" id="sX" min="0" max="100" step="0.1" value="40"></div>
+<label class="inl"><input type="checkbox" id="sBreak"> fir rupt / traductor defect (semnal 0)</label>
+<div class="kv" id="sKv"></div>
+<div id="sMsg" style="min-height:22px"></div>
+<small id="sNote"></small>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-// ---------- Model ----------
-const S={sp:60,kp:5,ki:0.3,kd:1,drain:0.2,h:10,u:0,i:0,pe:0,state:'STOP',
- xA:0.5,tset:60,rpm:80,mixer:true,heat:false,T:20,cA:0,cB:0,cP:0,hA:90,hB:90,rA:false,rB:false,tA:22,tB:18,k:0,QA:0,QB:0,dEff:0.2};
-const CA0=2,CB0=2,TAMB=20;
-const rho=(a,b,p,T)=>1000+45*a+30*b+60*p-0.3*(T-20);
-const $=id=>document.getElementById(id);
-const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
-const REC={r1:{xA:.5,tset:60,rpm:80,sp:60},r2:{xA:.65,tset:70,rpm:100,sp:55},r3:{xA:.5,tset:40,rpm:60,sp:60}};
-let simT=0;
-function step(dt){
-  simT+=dt;let dEff=S.drain;
-  if(S.state==='RUN'){
-    const e=(S.sp-S.h)/100;
-    S.i=S.ki>0?clamp(S.i+e*dt,-1/S.ki,1/S.ki):0;
-    const d=(e-S.pe)/dt;S.pe=e;
-    S.u=clamp(S.kp*e+S.ki*S.i+S.kd*d,0,1);
-  }else{S.u=0;if(S.state==='ESTOP')dEff=1;}
-  let QA=S.xA*0.8*S.u,QB=(1-S.xA)*0.8*S.u;
-  if(S.hA<1)QA=0;if(S.hB<1)QB=0;
-  const Qin=QA+QB,V=Math.max(S.h*0.1,0.3),Qout=0.12*dEff*Math.sqrt(S.h);
-  const can=S.state!=='ESTOP'&&S.h>12;
-  if(!can)S.heat=false;else if(S.T<S.tset-0.5)S.heat=true;else if(S.T>S.tset+0.5)S.heat=false;
-  const m=S.mixer?0.5+0.5*S.rpm/120:0.3;
-  S.k=0.01*Math.exp(4500*(1/293.15-1/(S.T+273.15)))*m;
-  const r=S.k*S.cA*S.cB,Tin=Qin>1e-6?(QA*S.tA+QB*S.tB)/Qin:TAMB;
-  S.cA=Math.max(0,S.cA+((QA*CA0-Qin*S.cA)/V-r)*dt);
-  S.cB=Math.max(0,S.cB+((QB*CB0-Qin*S.cB)/V-r)*dt);
-  S.cP=Math.max(0,S.cP+(-Qin*S.cP/V+r)*dt);
-  S.T+=(Qin*(Tin-S.T)/V+(S.heat?10/V:0)-0.002*(S.T-TAMB))*dt;
-  S.h=clamp(S.h+(Qin-Qout)*10*dt,0,100);
-  S.hA=clamp(S.hA-QA*2*dt+(S.rA?1.5*dt:0),0,100);S.hB=clamp(S.hB-QB*2*dt+(S.rB?1.5*dt:0),0,100);
-  if(S.hA<25)S.rA=true;if(S.hA>90)S.rA=false;if(S.hB<25)S.rB=true;if(S.hB>90)S.rB=false;
-  S.tA=22+0.3*Math.sin(simT/7);S.tB=18+0.3*Math.cos(simT/9);
-  S.dEff=dEff;S.QA=QA;S.QB=QB;
-}
-function cmd(c){
-  if(c==='start'&&S.state==='STOP'){S.state='RUN';S.i=0;S.pe=(S.sp-S.h)/100;}
-  else if(c==='stop'&&S.state==='RUN')S.state='STOP';
-  else if(c==='estop')S.state='ESTOP';
-  else if(c==='reset'&&S.state==='ESTOP')S.state='STOP';
-}
-function setRecipe(n){if(REC[n])Object.assign(S,REC[n]);$('rc').value=REC[n]?n:'manual';}
-// ---------- Scena 3D ----------
-const W=()=>innerWidth,H=()=>innerHeight;
-const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));
-R.outputEncoding=THREE.sRGBEncoding;R.toneMapping=THREE.ACESFilmicToneMapping;
-R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
-$('c').appendChild(R.domElement);
-const sc=new THREE.Scene();sc.background=new THREE.Color(0x16202b);
-const cam=new THREE.PerspectiveCamera(45,1,0.1,150);
-let az=0.5,el=0.2,dist=26;
-function place(){cam.position.set(dist*Math.sin(az)*Math.cos(el),3.6+dist*Math.sin(el),dist*Math.cos(az)*Math.cos(el));cam.lookAt(0,3.6,0);}
-function rs(){R.setSize(W(),H());cam.aspect=W()/H();cam.updateProjectionMatrix();place();}
-addEventListener('resize',rs);
-let drag=null;
-R.domElement.onpointerdown=e=>drag=[e.clientX,e.clientY];
-addEventListener('pointerup',()=>drag=null);
-addEventListener('pointermove',e=>{if(!drag)return;az-=(e.clientX-drag[0])*0.006;el=clamp(el+(e.clientY-drag[1])*0.004,0.02,1.2);drag=[e.clientX,e.clientY];place();});
-R.domElement.onwheel=e=>{dist=clamp(dist+e.deltaY*0.02,8,45);place();};
-(function(){const c=document.createElement('canvas');c.width=512;c.height=256;const g=c.getContext('2d');
- const gr=g.createLinearGradient(0,0,0,256);gr.addColorStop(0,'#c4dcf2');gr.addColorStop(.5,'#eef2f6');gr.addColorStop(.52,'#6b747d');gr.addColorStop(1,'#2a3036');
- g.fillStyle=gr;g.fillRect(0,0,512,256);g.fillStyle='#fff';[60,200,330,450].forEach(x=>g.fillRect(x,40,40,70));
- const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;t.encoding=THREE.sRGBEncoding;
- sc.environment=new THREE.PMREMGenerator(R).fromEquirectangular(t).texture;})();
-sc.add(new THREE.HemisphereLight(0xcfe3ff,0x303840,0.35));
-const dl=new THREE.DirectionalLight(0xffffff,1.6);dl.position.set(8,16,10);dl.castShadow=true;
-dl.shadow.mapSize.set(2048,2048);Object.assign(dl.shadow.camera,{left:-18,right:18,top:14,bottom:-6,near:1,far:60});dl.shadow.bias=-0.0005;sc.add(dl);
-const fc=document.createElement('canvas');fc.width=fc.height=256;const fg=fc.getContext('2d');
-fg.fillStyle='#5b6068';fg.fillRect(0,0,256,256);
-for(let i=0;i<4000;i++){const v=70+Math.random()*50|0;fg.fillStyle='rgb('+v+','+(v+3)+','+(v+8)+')';fg.fillRect(Math.random()*256,Math.random()*256,2,2);}
-const ft=new THREE.CanvasTexture(fc);ft.wrapS=ft.wrapT=THREE.RepeatWrapping;ft.repeat.set(12,12);ft.encoding=THREE.sRGBEncoding;
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(50,50),new THREE.MeshStandardMaterial({map:ft,roughness:0.95}));
-floor.rotation.x=-Math.PI/2;sc.add(floor);
-const steel=new THREE.MeshStandardMaterial({color:0xb7c0c9,metalness:0.85,roughness:0.38,side:THREE.DoubleSide});
-const paint=new THREE.MeshStandardMaterial({color:0x1f5fa8,metalness:0.35,roughness:0.45});
-const dark=new THREE.MeshStandardMaterial({color:0x2b3037,metalness:0.6,roughness:0.5});
-const glass=new THREE.MeshPhysicalMaterial({color:0xcfe8ff,transparent:true,opacity:0.16,roughness:0.05,metalness:0,clearcoat:1,side:THREE.DoubleSide,depthWrite:false});
-const TH=3.2,TR=1.2,Y0=1.0,KF=Math.cbrt(5);   // rezervoare de alimentare: volum x5 (scală liniară 5^(1/3))
-const colA=new THREE.Color(0x2a7de1),colB=new THREE.Color(0xe0602a),colP=new THREE.Color(0x35c46a),colW=new THREE.Color(0x3a8fd0);
-function buildTank(cx,k){
- const g=new THREE.Group();g.position.x=cx;g.scale.setScalar(k);sc.add(g);
- const wall=new THREE.Mesh(new THREE.CylinderGeometry(TR,TR,TH,64,1,true),glass);wall.position.y=Y0+TH/2;g.add(wall);
- for(const [b,d] of [[Y0+TH,1],[Y0,-1]]){const p=[];for(let i=0;i<=16;i++){const a=i/16*Math.PI/2;p.push(new THREE.Vector2(TR*Math.sin(a),b+d*0.3*Math.cos(a)));}g.add(new THREE.Mesh(new THREE.LatheGeometry(p,64),steel));}
- [0,0.33,0.66,1].forEach(f=>{const t=new THREE.Mesh(new THREE.TorusGeometry(TR+0.012,0.03,10,64),steel);t.rotation.x=Math.PI/2;t.position.y=Y0+TH*f;g.add(t);});
- [Y0,Y0+TH].forEach(y=>{const f=new THREE.Mesh(new THREE.CylinderGeometry(TR+0.07,TR+0.07,0.06,64),steel);f.position.y=y;g.add(f);});
- for(let q=0;q<4;q++){const a=Math.PI/4+q*Math.PI/2,x=TR*0.8*Math.cos(a),z=TR*0.8*Math.sin(a);
-  const l=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,Y0,12),paint);l.position.set(x,Y0/2,z);g.add(l);
-  const fp=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.14,0.03,16),dark);fp.position.set(x,0.015,z);g.add(fp);}
- const water=new THREE.Mesh(new THREE.CylinderGeometry(TR-0.02,TR-0.02,1,48),new THREE.MeshPhysicalMaterial({color:0x1e88e5,transparent:true,opacity:0.72,roughness:0.1}));g.add(water);
- const surf=new THREE.Mesh(new THREE.RingGeometry(0.01,TR-0.02,48,12),new THREE.MeshStandardMaterial({color:0x58b2f5,roughness:0.05,transparent:true,opacity:0.85,side:THREE.DoubleSide}));
- surf.rotation.x=-Math.PI/2;g.add(surf);
- const pa=surf.geometry.attributes.position,rad=[];for(let i=0;i<pa.count;i++)rad.push(Math.hypot(pa.getX(i),pa.getY(i)));
- [wall,water,surf].forEach(m=>m.castShadow=false);
- return {g,water,surf,pa,rad};}
-function updTank(T,h,amp,t,col){
- const wh=Math.max(h/100*TH,0.002);T.water.scale.y=wh;T.water.position.y=Y0+wh/2;T.surf.position.y=Y0+wh+0.002;
- T.water.material.color.copy(col);T.surf.material.color.copy(col).offsetHSL(0,0,0.12);
- for(let i=0;i<T.pa.count;i++)T.pa.setZ(i,amp*Math.sin(T.rad[i]*9-t*3)*T.rad[i]/TR);
- T.pa.needsUpdate=true;T.surf.geometry.computeVertexNormals();return Y0+wh;}
-const tA=buildTank(-8,KF),tB=buildTank(8,KF),tF=buildTank(0,1);
-// conducte
-const Yv=new THREE.Vector3(0,1,0);
-function pipe(a,b,r=0.1){const A=new THREE.Vector3(...a),B=new THREE.Vector3(...b),d=B.clone().sub(A);
- const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,d.length(),20),paint);m.position.copy(A).add(B).multiplyScalar(0.5);
- m.quaternion.setFromUnitVectors(Yv,d.normalize());sc.add(m);}
-function elbow(p,r=0.1){const m=new THREE.Mesh(new THREE.SphereGeometry(r*1.02,20,14),paint);m.position.set(...p);sc.add(m);}
-function flange(p,axis,r=0.1){const m=new THREE.Mesh(new THREE.CylinderGeometry(r*1.9,r*1.9,0.05,24),steel);
- m.position.set(...p);if(axis==='x')m.rotation.z=Math.PI/2;if(axis==='z')m.rotation.x=Math.PI/2;sc.add(m);
- for(let i=0;i<6;i++){const b=new THREE.Mesh(new THREE.CylinderGeometry(0.014,0.014,0.08,6),dark),t=i/6*Math.PI*2,q=r*1.5;
-  const o=axis==='x'?[0,Math.cos(t)*q,Math.sin(t)*q]:axis==='y'?[Math.cos(t)*q,0,Math.sin(t)*q]:[Math.cos(t)*q,Math.sin(t)*q,0];
-  b.position.set(p[0]+o[0],p[1]+o[1],p[2]+o[2]);b.rotation.copy(m.rotation);sc.add(b);}}
-function valve(x,y){
- const g=new THREE.Group();g.position.set(x,y,0);sc.add(g);
- const body=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.13,0.7,20),paint);body.rotation.z=Math.PI/2;g.add(body);
- g.add(new THREE.Mesh(new THREE.SphereGeometry(0.21,24,16),paint));
- const bon=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.12,0.3,16),steel);bon.position.y=0.3;g.add(bon);
- const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.018,0.55,8),steel);stem.position.y=0.55;g.add(stem);
- const wm=new THREE.MeshStandardMaterial({color:0xcc2222,metalness:0.3,roughness:0.5});
- const wheel=new THREE.Group();
- wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.2,0.026,10,32),wm).rotateX(Math.PI/2));
- for(let i=0;i<2;i++){const s=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.02,0.02),wm);s.rotation.y=i*Math.PI/2;wheel.add(s);}
- wheel.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.06,12),dark));
- wheel.position.y=0.82;g.add(wheel);
- flange([x-0.36,y,0],'x');flange([x+0.36,y,0],'x');
- return {stem,wheel,wm};}
-function pump(x,y){const g=new THREE.Group();g.position.set(x,y,0);sc.add(g);
- g.add(new THREE.Mesh(new THREE.SphereGeometry(0.24,20,16),paint));
- const m=new THREE.Mesh(new THREE.CylinderGeometry(0.2,0.2,0.6,20),steel);m.rotation.z=Math.PI/2;m.position.set(Math.sign(-x)*0.5,-0.1,0.0);g.add(m);
- const f=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.06,0.4),dark);f.position.set(Math.sign(-x)*0.2,-0.38,0);g.add(f);}
-function feedLine(s){const cx=8*s;
- pipe([cx,1.22,0],[cx,1,0]);flange([cx,1.2,0],'y');elbow([cx,1,0]);pipe([cx,1,0],[3*s,1,0]);elbow([3*s,1,0]);
- pipe([3*s,1,0],[3*s,5,0]);elbow([3*s,5,0]);pipe([3*s,5,0],[0.55*s,5,0]);elbow([0.55*s,5,0]);pipe([0.55*s,5,0],[0.55*s,4.1,0]);
- pump(5.2*s,1);return valve(3.9*s,1);}
-const vA=feedLine(-1),vB=feedLine(1);
-// golire reactor
-pipe([0,0.72,0],[0,0.55,0]);flange([0,0.7,0],'y');elbow([0,0.55,0]);
-pipe([0,0.55,0],[2.04,0.55,0]);pipe([2.76,0.55,0],[4.2,0.55,0]);elbow([4.2,0.55,0]);pipe([4.2,0.55,0],[4.2,0.4,0]);
-const vOut=valve(2.4,0.55);
-const tray=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.16,1),dark);tray.position.set(4.2,0.08,0);sc.add(tray);
-const tw=new THREE.Mesh(new THREE.PlaneGeometry(1.2,0.8),new THREE.MeshStandardMaterial({color:0x2a78b5,roughness:0.1,transparent:true,opacity:0.85}));
-tw.rotation.x=-Math.PI/2;tw.position.set(4.2,0.165,0);sc.add(tw);
-// scara + indicatoare reactor
-const sk=document.createElement('canvas');sk.width=128;sk.height=512;const sg=sk.getContext('2d');
-sg.fillStyle='#e9eef2';sg.fillRect(0,0,128,512);sg.fillStyle='#222';sg.font='bold 17px sans-serif';
-for(let p=0;p<=100;p+=5){const y=10+(1-p/100)*492;sg.fillRect(p%10?78:62,y-1,p%10?18:34,2);if(p%20===0)sg.fillText(p+'%',6,y+6);}
-const scale=new THREE.Mesh(new THREE.PlaneGeometry(0.5,TH*512/492),new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(sk),roughness:0.6}));
-scale.position.set(1.65,Y0+TH/2,0.05);sc.add(scale);
-const mk=c=>new THREE.Mesh(new THREE.ConeGeometry(0.07,0.18,3),new THREE.MeshBasicMaterial({color:c}));
-const spMark=mk(0xf6c344),lvMark=mk(0x3fb6ff);spMark.rotation.z=Math.PI/2;lvMark.rotation.z=-Math.PI/2;
-spMark.position.set(1.98,Y0,0.06);lvMark.position.set(1.33,Y0,0.06);sc.add(spMark,lvMark);
-// traductor nivel + sondă temperatură + termostat
-const lt=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.4,20),steel);lt.position.set(0,Y0+TH+0.4,0.65);sc.add(lt);
-const ltb=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.18,0.18),dark);ltb.position.set(0,Y0+TH+0.68,0.65);sc.add(ltb);
-const probe=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,2.6,8),steel);probe.position.set(-0.8,Y0+TH-1.1,0.45);sc.add(probe);
-const thb=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.42,0.16),dark);thb.position.set(-1.55,Y0+1.1,0.35);sc.add(thb);
-const led=new THREE.Mesh(new THREE.SphereGeometry(0.05,12,10),new THREE.MeshStandardMaterial({color:0x333333}));led.position.set(-1.55,Y0+1.22,0.45);sc.add(led);
-// rezistență de încălzire (elicoidală) + borne
-const hp=[];for(let i=0;i<=90;i++){const a=i/90*Math.PI*2*4;hp.push(new THREE.Vector3(Math.cos(a)*0.65,Y0+0.3+i/90*0.3,Math.sin(a)*0.65));}
-const coilMat=new THREE.MeshStandardMaterial({color:0x884433,metalness:0.7,roughness:0.4,emissive:0x000000});
-const coil=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hp),240,0.03,8),coilMat);sc.add(coil);
-const stub=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,0.7,8),steel);stub.rotation.z=Math.PI/2;stub.position.set(-1.15,Y0+0.3,0);sc.add(stub);
-// mixer
-const mx=new THREE.Group();sc.add(mx);
-const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,3.5,12),steel);shaft.position.y=3.2;mx.add(shaft);
-[1.55,2.5].forEach(y=>{const hub=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.09,0.1,12),steel);hub.position.y=y;mx.add(hub);
- for(let i=0;i<4;i++){const b=new THREE.Mesh(new THREE.BoxGeometry(0.45,0.03,0.16),steel);const a=i*Math.PI/2;
-  b.position.set(Math.cos(a)*0.3,y,Math.sin(a)*0.3);b.rotation.set(0.5,-a,0);mx.add(b);}});
-const mot=new THREE.Mesh(new THREE.CylinderGeometry(0.22,0.22,0.4,24),paint);mot.position.y=4.85;sc.add(mot);
-const mnt=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.2,0.3,20),steel);mnt.position.y=4.6;sc.add(mnt);
-// jeturi
-function stripe(){const c=document.createElement('canvas');c.width=16;c.height=64;const g=c.getContext('2d');g.fillStyle='#8ab';g.fillRect(0,0,16,64);
- g.fillStyle='#fff';for(let i=0;i<4;i++)g.fillRect(2+Math.random()*8,i*16,5,9);
- const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;}
-const jm=c=>new THREE.MeshStandardMaterial({map:stripe(),color:c,transparent:true,opacity:0.88});
-const mkJet=c=>new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1,12,1,true),jm(c));
-const sA=mkJet(colA),sB=mkJet(colB),jet=mkJet(colW);jet.position.x=4.2;sc.add(sA,sB,jet);
-const mkSp=()=>{const s=new THREE.Mesh(new THREE.RingGeometry(0.06,0.14,24),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,side:THREE.DoubleSide}));s.rotation.x=-Math.PI/2;sc.add(s);return s;};
-const spA=mkSp(),spB=mkSp();
-// lampă
-const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.16,20,16),new THREE.MeshStandardMaterial({color:0x555555,emissive:0x000000}));
-lamp.position.set(0,5.55,0);sc.add(lamp);
-// afișaje 3D
-function readout(x,y,z,title){const c=document.createElement('canvas');c.width=256;c.height=140;const g=c.getContext('2d'),tx=new THREE.CanvasTexture(c);
- const s=new THREE.Sprite(new THREE.SpriteMaterial({map:tx,depthTest:false}));s.position.set(x,y,z);s.scale.set(2.6,1.42,1);sc.add(s);
- return L=>{g.fillStyle='rgba(15,23,32,.88)';g.fillRect(0,0,256,140);g.fillStyle='#3fb6ff';g.font='bold 19px sans-serif';g.fillText(title,10,24);
-  g.fillStyle='#e6edf3';g.font='17px monospace';L.forEach((l,i)=>g.fillText(l,10,50+i*22));tx.needsUpdate=true;};}
-const roA=readout(-8,9.3,0,'REZERVOR A (5x)'),roB=readout(8,9.3,0,'REZERVOR B (5x)'),roF=readout(0,6.9,0,'REACTOR (final)');
-sc.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});
-[floor,tw,scale,spMark,lvMark,sA,sB,jet,spA,spB,tA.water,tA.surf,tB.water,tB.surf,tF.water,tF.surf].forEach(m=>m.castShadow=false);
-tA.g.children[0].castShadow=tB.g.children[0].castShadow=tF.g.children[0].castShadow=false;
-function setValve(v,o){v.wheel.rotation.y=o*Math.PI*6;v.stem.position.y=0.55+o*0.14;v.wheel.position.y=0.82+o*0.14;v.wm.color.setHSL(0.33*o,0.7,0.4);}
-let lastT=0,roT=0,hot=0;
-const fmt=(h,c,d,T)=>['Nivel '+h.toFixed(0)+' %','Conc  '+c.toFixed(2)+' mol/L','Dens  '+d.toFixed(0)+' kg/m3','Temp  '+T.toFixed(1)+' C'];
-function updScene(t){
-  const dt=Math.min(t-lastT,0.1);lastT=t;
-  updTank(tA,S.hA,0.004,t,colA);updTank(tB,S.hB,0.004,t,colB);
-  const tot=S.cA+S.cB+S.cP,col=new THREE.Color();
-  if(tot<0.02)col.copy(colW);else col.setRGB((colA.r*S.cA+colB.r*S.cB+colP.r*S.cP)/tot,(colA.g*S.cA+colB.g*S.cB+colP.g*S.cP)/tot,(colA.b*S.cA+colB.b*S.cB+colP.b*S.cP)/tot);
-  const top=Y0+Math.max(S.h/100*TH,0.002);
-  updTank(tF,S.h,0.004+0.03*(S.QA+S.QB)/0.8+0.01*(S.mixer?S.rpm/120:0),t,col);
-  const len=Math.max(Y0+TH+0.15-top,0.05);
-  [[sA,spA,-0.55,S.QA],[sB,spB,0.55,S.QB]].forEach(([s,sp,x,q])=>{const on=q>0.003;s.visible=sp.visible=on;
-    if(on){const w=0.4+q*3;s.scale.set(w,len,w);s.position.set(x,top+len/2,0);s.material.map.repeat.set(1,len*2);s.material.map.offset.y=-t*1.5;
-      sp.position.set(x,top+0.01,0);sp.scale.setScalar(1+0.3*Math.sin(t*14)+q);sp.material.opacity=0.3+0.5*q;}});
-  jet.visible=S.dEff>0.02&&S.h>0.5;
-  if(jet.visible){jet.material.color.copy(col);jet.scale.set(0.5+S.dEff,0.23,0.5+S.dEff);jet.position.set(4.2,0.285,0);jet.material.map.offset.y=-t*1.5;}
-  setValve(vA,S.u*S.xA);setValve(vB,S.u*(1-S.xA));setValve(vOut,S.dEff);
-  spMark.position.y=Y0+S.sp/100*TH;lvMark.position.y=Y0+S.h/100*TH;
-  mx.rotation.y+=(S.mixer?S.rpm/60*Math.PI*2*0.25:0)*dt;
-  hot+=((S.heat?1:0)-hot)*Math.min(1,dt*3);coilMat.emissive.setRGB(hot,hot*0.2,0);coilMat.emissiveIntensity=1.5;
-  led.material.color.set(S.heat?0xff3322:0x333333);led.material.emissive.set(S.heat?0xff2200:0x000000);
-  const c=S.state==='RUN'?0x2ecc71:S.state==='ESTOP'?0xff2222:0x666666;
-  lamp.material.color.set(c);lamp.material.emissive.set(S.state==='STOP'?0x000000:c);
-  if(t-roT>0.25){roT=t;
-    roA(fmt(S.hA,CA0,rho(CA0,0,0,S.tA),S.tA));roB(fmt(S.hB,CB0,rho(0,CB0,0,S.tB),S.tB));
-    const L=fmt(S.h,S.cP,rho(S.cA,S.cB,S.cP,S.T),S.T);L[1]='Prod  '+S.cP.toFixed(2)+' mol/L';roF(L.concat(['Rez. '+(S.heat?'PORNITA':'oprita')+' / '+S.tset+' C']).slice(0,5));}
-}
-// ---------- UI ----------
-const hist=[];
-const MAP={sp:'sp',kp:'kp',ki:'ki',kd:'kd',xa:'xA',ts:'tset',rp:'rpm'};
-function ui(){
-  $('vsp').textContent=S.sp.toFixed(1)+' %';$('vh').textContent=S.h.toFixed(1)+' %';
-  $('vkp').textContent=S.kp.toFixed(1);$('vki').textContent=S.ki.toFixed(2);$('vkd').textContent=S.kd.toFixed(1);
-  $('vdr').textContent=(S.drain*100).toFixed(0)+' %';$('vu').textContent=(S.u*100).toFixed(0)+' %';
-  $('vxa').textContent='A '+(S.xA*100).toFixed(0)+' % : B '+((1-S.xA)*100).toFixed(0)+' %';
-  $('vts').textContent=S.tset+' °C';$('vrp').textContent=S.rpm+' rpm';
-  const st=$('st');st.className=S.state;st.textContent={RUN:'ÎN FUNCȚIUNE',STOP:'OPRIT',ESTOP:'OPRIRE DE URGENȚĂ'}[S.state];
-  $('be').textContent=S.state==='ESTOP'?'RESET AU':'AU';$('bm').textContent='MIXER: '+(S.mixer?'ON':'OFF');
-  for(const id in MAP)if(document.activeElement!==$(id))$(id).value=S[MAP[id]];
-  if(document.activeElement!==$('dr'))$('dr').value=S.drain;
-  const row=(n,h,c,d,T)=>'<td>'+n+'</td><td>'+h.toFixed(0)+'</td><td>'+c.toFixed(2)+'</td><td>'+d.toFixed(0)+'</td><td>'+T.toFixed(1)+'</td>';
-  $('ra').innerHTML=row('A',S.hA,CA0,rho(CA0,0,0,S.tA),S.tA);$('rb').innerHTML=row('B',S.hB,CB0,rho(0,CB0,0,S.tB),S.tB);
-  $('rf').innerHTML=row('Final',S.h,S.cP,rho(S.cA,S.cB,S.cP,S.T),S.T);
-  $('mx').textContent='Reactor: A '+S.cA.toFixed(2)+' | B '+S.cB.toFixed(2)+' | P '+S.cP.toFixed(2)+' mol/L; k_ef '+S.k.toFixed(3)+'; rezistență '+(S.heat?'PORNITĂ':'oprită')+(S.rA||S.rB?'; reumplere '+(S.rA?'A ':'')+(S.rB?'B':''):'');
-}
-for(const id in MAP)$(id).oninput=e=>{S[MAP[id]]=+e.target.value;if(id!=='sp'&&id[0]!=='k')$('rc').value='manual';};
-$('dr').oninput=e=>S.drain=+e.target.value;
-$('rc').onchange=e=>setRecipe(e.target.value);
-$('bm').onclick=()=>S.mixer=!S.mixer;
-$('bs').onclick=()=>cmd('start');$('bt').onclick=()=>cmd('stop');
-$('be').onclick=()=>cmd(S.state==='ESTOP'?'reset':'estop');
-const cx=$('ch').getContext('2d');
-function chart(){const w=300,h=90;cx.clearRect(0,0,w,h);
-  [['sp','#f6c344'],['h','#3fb6ff']].forEach(([k,c])=>{cx.strokeStyle=c;cx.beginPath();
-    hist.forEach((p,i)=>{const x=i/300*w,y=h-p[k]/100*h;i?cx.lineTo(x,y):cx.moveTo(x,y);});cx.stroke();});}
-// ---------- API extern ----------
-function apply(m){
-  for(const k of['sp','kp','ki','kd','drain','xA','tset','rpm'])if(typeof m[k]==='number')S[k]=k==='drain'||k==='xA'?clamp(m[k],0,1):m[k];
-  if(typeof m.setpoint==='number')S.sp=clamp(m.setpoint,0,100);
-  if(typeof m.mixer==='boolean')S.mixer=m.mixer;
-  if(m.recipe)setRecipe(m.recipe);
-  if(m.cmd)cmd(m.cmd);
-}
-const r2=x=>+x.toFixed(3);
-const tel=()=>({t:Date.now(),state:S.state,level:r2(S.h),sp:S.sp,kp:S.kp,ki:S.ki,kd:S.kd,drain:S.drain,fill:r2(S.u),xA:S.xA,tset:S.tset,rpm:S.rpm,mixer:S.mixer,heater:S.heat,k:r2(S.k),
- A:{level:r2(S.hA),conc:CA0,rho:r2(rho(CA0,0,0,S.tA)),T:r2(S.tA)},B:{level:r2(S.hB),conc:CB0,rho:r2(rho(0,CB0,0,S.tB)),T:r2(S.tB)},
- final:{level:r2(S.h),cA:r2(S.cA),cB:r2(S.cB),cP:r2(S.cP),rho:r2(rho(S.cA,S.cB,S.cP,S.T)),T:r2(S.T)}});
-window.tankAPI={set:apply,get:tel};
-addEventListener('message',e=>{if(e.data&&typeof e.data==='object')apply(e.data);});
-let ws=null;
-$('cn').onclick=()=>{
-  if(ws){ws.close();return;}
-  try{ws=new WebSocket($('url').value);}catch(err){$('wst').textContent='URL invalid';ws=null;return;}
-  ws.onopen=()=>{$('wst').textContent='conectat';$('cn').textContent='Deconectare';};
-  ws.onmessage=e=>{try{apply(JSON.parse(e.data));}catch(_){}};
-  ws.onclose=ws.onerror=()=>{$('wst').textContent='deconectat';$('cn').textContent='Conectare';ws=null;};
-};
-const q=new URLSearchParams(location.search).get('ws');if(q){$('url').value=q;$('cn').click();}
-setInterval(()=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(tel()));},200);
-// ---------- Buclă ----------
-let last=performance.now(),acc=0;
-function loop(t){
-  const dt=Math.min((t-last)/1000,0.1);last=t;
-  for(let n=0;n<5;n++)step(dt/5||0.001);
-  acc+=dt;if(acc>0.1){acc=0;hist.push({sp:S.sp,h:S.h});if(hist.length>300)hist.shift();}
-  updScene(simT);ui();chart();R.render(sc,cam);requestAnimationFrame(loop);
-}
-rs();requestAnimationFrame(loop);
-</script></body></html>
+<div class="card"><h3>Pt100: legarea cu 2, 3 sau 4 fire</h3>
+<div class="row"><label>Temperatura reală <b id="wTv"></b></label><input type="range" id="wT" min="-50" max="300" step="1" value="100"></div>
+<div class="row"><label>Rezistența unui fir <b id="wRv"></b></label><input type="range" id="wR" min="0" max="5" step="0.05" value="1.2"></div>
+<div class="row"><label>Diferența dintre fire (3 fire) <b id="wDv"></b></label><input type="range" id="wD" min="0" max="0.5" step="0.01" value="0.05"></div>
+<table id="wTb" style="margin-top:6px"></table>
+<small>R(T) = 100·(1 + 3,9083·10⁻³·T − 5,775·10⁻⁷·T²) [Ω], pentru T ≥ 0 °C (Callendar–Van Dusen); sub 0 °C se adaugă termenul în T³.</small>
+</div>
+</div>
+<div class="g2">
+<div class="card"><h3>Calibrare în două puncte</h3>
+<table class="ed"><tr><th></th><th>Referință</th><th>Citire</th></tr>
+<tr><td>Punct 1</td><td><input type="number" id="c1r" value="0" style="width:90px"></td><td><input type="number" id="c1m" value="1.8" style="width:90px"></td></tr>
+<tr><td>Punct 2</td><td><input type="number" id="c2r" value="100" style="width:90px"></td><td><input type="number" id="c2m" value="101.9" style="width:90px"></td></tr></table>
+<div class="row"><label>Citire de corectat <b id="cXv"></b></label><input type="range" id="cX" min="0" max="110" step="0.1" value="60"></div>
+<div class="kv" id="cKv"></div><pre class="code" id="cCode"></pre></div>
+<div class="card"><h3>Zgomot și filtrare</h3>
+<div class="inl"><label>zgomot σ <input type="number" id="nS" value="1.5" step="0.1" style="width:64px"></label><label>filtru α <input type="number" id="nA" value="0.15" step="0.01" min="0.01" max="1" style="width:64px"></label>
+<select id="nM" style="width:130px"><option value="ema">medie exponențială</option><option value="med">mediană pe 5</option></select><button class="b s" id="nGo">Regenerează</button></div>
+<canvas id="nCv" width="520" height="190" style="margin-top:8px"></canvas><div id="nKv" class="kv"></div>
+<small>Filtrul reduce zgomotul, dar întârzie răspunsul: filtrul y += α·(x − y) are constantă de timp ≈ Ts·(1−α)/α.</small></div>
+</div>
+</section>
+
+<section id="t2">
+<div class="g2">
+<div class="card"><h3>Caracteristici de debit ale valvelor</h3>
+<div class="row"><label>Autoritatea valvei β = Δp valvă / Δp total <b id="vBv"></b></label><input type="range" id="vB" min="0.05" max="1" step="0.01" value="0.5"></div>
+<div class="row"><label>Deschidere <b id="vXv"></b></label><input type="range" id="vX" min="0" max="100" step="1" value="50"></div>
+<canvas id="vCv" width="520" height="260"></canvas>
+<div id="vKv" class="kv"></div>
+<small>Debit relativ instalat: Q = f(x) / √(β + (1−β)·f(x)²). Caracteristici intrinseci: liniară f = x; procent egal f = R^(x−1), R = 50; deschidere rapidă f = √x. Scopul: câștigul instalat (pantă) cât mai constant pe domeniul de lucru.</small></div>
+<div class="card"><h3>Comandă ON/OFF și PWM pentru o rezistență</h3>
+<div class="row"><label>Factor de umplere <b id="pDv"></b></label><input type="range" id="pD" min="0" max="100" step="1" value="35"></div>
+<div class="row"><label>Perioada PWM <b id="pPv"></b></label><input type="range" id="pP" min="1" max="60" step="1" value="10"></div>
+<div class="row"><label>Puterea nominală [W] <b id="pWv"></b></label><input type="range" id="pW" min="100" max="3000" step="50" value="1000"></div>
+<canvas id="pCv" width="400" height="110"></canvas><div id="pKv" class="kv"></div>
+<select id="pDev" style="margin-top:4px"><option value="1000000">Contactor (≈ 10⁶ comutări)</option><option value="100000">Releu electromecanic (≈ 10⁵ comutări)</option><option value="1000000000">Releu static SSR (practic nelimitat)</option></select>
+</div>
+</div>
+<div class="card"><h3>Pompă cu convertizor de frecvență (legile de afinitate)</h3>
+<div class="g2"><div><div class="row"><label>Frecvența <b id="fFv"></b></label><input type="range" id="fF" min="10" max="50" step="1" value="40"></div>
+<div class="kv" id="fKv"></div><small>Q ∝ n, H ∝ n², P ∝ n³ (pompă centrifugă, contrapresiune statică neglijabilă). Compararea cu strangularea este un model simplificat: P ≈ P₀·(0,45 + 0,55·Q/Q₀).</small></div>
+<canvas id="fCv" width="480" height="230"></canvas></div></div>
+</section>
+
+<section id="t3">
+<div class="g2">
+<div>
+<div class="card"><h3>Procesul (FOPDT) și regulatorul</h3>
+<div class="inl"><label>K <input type="number" id="K" value="1.5" step="0.1" style="width:64px"></label><label>T [s] <input type="number" id="T" value="40" step="1" style="width:64px"></label><label>L [s] <input type="number" id="L" value="6" step="0.5" style="width:64px"></label>
+<label>zgomot σ <input type="number" id="sg" value="0" step="0.1" style="width:64px"></label></div>
+<div class="inl" style="margin-top:8px"><label>Regulator <select id="mode" style="width:100px"><option>ON/OFF</option><option>P</option><option selected>PI</option><option>PID</option></select></label>
+<label>Kp <input type="number" id="kp" value="1.2" step="0.1" style="width:64px"></label><label>Ti [s] <input type="number" id="ti" value="25" step="1" style="width:64px"></label><label>Td [s] <input type="number" id="td" value="0" step="0.5" style="width:64px"></label>
+<label>histerezis <input type="number" id="hy" value="1" step="0.5" style="width:60px"></label></div>
+<div class="inl" style="margin-top:8px"><label><input type="checkbox" id="aw" checked> anti-windup</label><label><input type="checkbox" id="sat" checked> limitare ieșire 0…<input type="number" id="umax" value="100" style="width:58px"> %</label>
+<label>consemn final <input type="number" id="sp2" value="70" style="width:64px"></label><label>perturbație [%] <input type="number" id="dist" value="-10" style="width:64px"></label></div>
+<div class="inl" style="margin-top:8px"><button class="b s" id="zn1">ZN buclă deschisă (PI)</button><button class="b s" id="zn2">ZN buclă deschisă (PID)</button><button class="b s" id="imc">IMC / lambda (PI, λ = L)</button><button class="b s n" id="idn">Identifică procesul</button></div>
+<small>Consemn: 0 → 50 la t = 10 s, apoi la valoarea finală la t = 300 s; la t = 500 s se adaugă perturbația pe intrarea procesului.</small></div>
+<div class="card"><h3>Răspunsul sistemului</h3><canvas id="rCv" width="640" height="250"></canvas><canvas id="uCv" width="640" height="110" style="margin-top:6px"></canvas>
+<div id="rKv" class="kv"></div></div>
+</div>
+<div>
+<div class="card"><h3>Identificarea din răspunsul la treaptă</h3>
+<div class="inl"><label>treaptă de comandă [%] <input type="number" id="idu" value="20" style="width:64px"></label><button class="b s" id="idr">Rulează în buclă deschisă</button></div>
+<canvas id="iCv" width="460" height="200" style="margin-top:8px"></canvas><div id="iKv" class="kv"></div>
+<small>Metoda celor două puncte: t₂₈,₃ și t₆₃,₂ ale răspunsului. T = 1,5·(t₆₃,₂ − t₂₈,₃), L = t₆₃,₂ − T, K = Δy/Δu. Zgomotul din câmpul din stânga afectează estimarea.</small></div>
+<div class="card"><h3>Formule de acordare</h3>
+<table><tr><th>Metodă</th><th>Kp</th><th>Ti</th><th>Td</th></tr>
+<tr><td>ZN, P</td><td>T/(K·L)</td><td>–</td><td>–</td></tr>
+<tr><td>ZN, PI</td><td>0,9·T/(K·L)</td><td>3,33·L</td><td>–</td></tr>
+<tr><td>ZN, PID</td><td>1,2·T/(K·L)</td><td>2·L</td><td>0,5·L</td></tr>
+<tr><td>IMC, PI</td><td>T/(K·(λ+L))</td><td>T</td><td>–</td></tr></table>
+<small>Zeigler–Nichols dă răspuns oscilant (depășire 20–40 %); IMC cu λ ≥ L dă răspuns mai calm. Parametrii se verifică și se rafinează pe simulare.</small></div>
+</div>
+</div>
+</section>
+
+<section id="t4">
+<div class="card"><h3>Reactorul cu două rezervoare de alimentare (3D)</h3>
+<small>Reglarea nivelului în reactor cu PID: modificați Kp, Ki, Kd, deschiderea valvei de golire (perturbație), rețetele și termostatul. <a href="reactor.html" target="_blank">Deschide pe tot ecranul</a> · se încarcă three.js de pe cdnjs.</small>
+<iframe id="fr" src="reactor.html" style="margin-top:8px" loading="lazy"></iframe></div>
+</section>
+
+<section id="t5">
+<div class="card"><h3>Desfășurarea lucrării (2 ședințe × 2 ore)</h3><ol id="ex"></ol></div>
+<div class="g3">
+<div class="card"><h3>Întrebări de control</h3><ol id="qs"></ol></div>
+<div class="card"><h3>Raport</h3><p>Raportul conține rezultatele lanțului de măsurare, calibrarea, regimul valvei, metrica regulatoarelor din fila 3 și acordurile folosite.</p><button class="b g" id="rep">Descarcă raportul (.txt)</button></div>
+</div>
+</section>
+</main>
+<script src="app.js"></script>
+</body></html>
