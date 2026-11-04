@@ -1,9 +1,6 @@
-# Îndrumar de laborator
+# Automatizarea Sistemelor și Proceselor Industriale (MSP2101)
 
-1.	Arhitecturi pentru sistemele de automatizare. Consideratii generale
-2.	Sisteme informatice de automatizare.
-3.	Subsistemul de I/E: senzori, actuatoare, regulatoare automate
-4.	Programare microcontrolere. IDE Arduino
-5.	Software si programare. SCADA
-6.	Interfete om-masina (HMI)
-7.	Dezvoltarea aplicatiilor de automatizare
+- `index.html` – pagina de start (date despre disciplină + lista laboratoarelor)
+- `labs/labN/index.html` – aplicația lucrării N
+- Pentru a lega o aplicație: pune-o în `labs/labN/` și completează `href` (și `d`) în lista `LABS` din `index.html`.
+- Publicare: Settings → Pages → ramura `main`, folder `/ (root)`.
