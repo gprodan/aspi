@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucrarea 5 – Software și programare. SCADA</title>
+<style>
+:root{--bg:#f4f7fb;--card:#fff;--tx:#14202e;--mut:#5a6b7e;--ac:#1f6fd1;--bd:#dde4ec;--ok:#1e9e5a;--warn:#e08a00;--bad:#d23c3c;--svgbg:#eef3f9;--code:#0f1720;--codetx:#d7e3f2;--pipe:#9aa8b8;--liq:#4aa3ff;--gas:#c9a227}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1720;--card:#1b2633;--tx:#e6edf3;--mut:#8b9bb0;--ac:#4aa3ff;--bd:#2c3b4e;--ok:#3ec47e;--warn:#f0a020;--bad:#ef5b5b;--svgbg:#162130;--code:#0b1118;--pipe:#5d6e82}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:14px 16px 0;max-width:1200px;margin:0 auto}
+header a{color:var(--ac);font-size:13px;text-decoration:none}
+h1{font-size:20px;margin:4px 0 2px}
+header p{margin:0 0 10px;color:var(--mut);font-size:13px}
+nav{display:flex;gap:4px;flex-wrap:wrap;max-width:1200px;margin:0 auto;padding:0 16px;border-bottom:1px solid var(--bd)}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 12px;color:var(--mut);font:inherit;font-weight:600;cursor:pointer}
+nav button.on{color:var(--ac);border-color:var(--ac)}
+#simbar{max-width:1200px;margin:8px auto 0;padding:0 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#simbar .t{font-variant-numeric:tabular-nums;color:var(--mut);font-size:13px;margin-left:auto}
+main{max-width:1200px;margin:0 auto;padding:12px 16px 24px}
+section{display:none}section.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:14px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:15px}
+.row{margin:8px 0}
+.row label{display:flex;justify-content:space-between;gap:8px;color:var(--mut);font-size:13px}
+.row b{color:var(--tx);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%}
+select,input[type=number],input[type=text],textarea{background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:5px 6px;font:inherit;max-width:100%}
+select,input[type=text],textarea{width:100%}
+button.b{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:7px 12px;font-weight:700;cursor:pointer;font-size:14px}
+button.b.g{background:var(--ok)}button.b.r{background:var(--bad)}button.b.n{background:var(--mut)}button.b.s{padding:3px 8px;font-size:12px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:8px 0}
+.kv div{background:var(--svgbg);border-radius:8px;padding:6px 10px}
+.kv span{display:block;font-size:12px;color:var(--mut)}.kv b{font-size:16px;font-variant-numeric:tabular-nums}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+canvas{width:100%;background:var(--svgbg);border-radius:8px;display:block}
+svg#syn{width:100%;height:auto;background:var(--svgbg);border-radius:8px;display:block}
+pre.code,textarea.code{background:var(--code);color:var(--codetx);border-radius:8px;padding:10px;font:12.5px/1.45 ui-monospace,Consolas,monospace;overflow:auto;margin:0;white-space:pre}
+small,.mut{color:var(--mut)}
+table{border-collapse:collapse;width:100%;font-size:13px}td,th{border-bottom:1px solid var(--bd);padding:4px 6px;text-align:left}
+.inl{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tagbox{cursor:pointer}.tagbox rect{fill:var(--card);stroke:var(--bd);stroke-width:1.5}.tagbox text{fill:var(--tx);font:12px ui-monospace,monospace}
+.tagbox .nm{fill:var(--mut);font-size:10px}.tagbox.sel rect{stroke:var(--ac);stroke-width:2.5}
+.tagbox.q-stale text.v{fill:var(--warn)}.tagbox.q-bad text.v{fill:var(--bad)}
+.tagbox.a1 rect{stroke:var(--bad);stroke-width:3}.tagbox.a2 rect{stroke:var(--warn);stroke-width:3}
+.tagbox.blink rect{animation:bl .8s steps(2) infinite}@keyframes bl{50%{fill:rgba(210,60,60,.25)}}
+.pri1{color:var(--bad);font-weight:700}.pri2{color:var(--warn);font-weight:700}
+tr.unack td{animation:bl2 .9s steps(2) infinite}@keyframes bl2{50%{background:rgba(210,60,60,.15)}}
+#ed{position:relative;width:100%;max-width:760px;height:420px;background:var(--svgbg);border:1px solid var(--bd);border-radius:8px;overflow:hidden;background-image:radial-gradient(var(--bd) 1px,transparent 1px);background-size:20px 20px}
+.w{position:absolute;user-select:none;font:13px system-ui;padding:3px 6px;border-radius:6px;background:var(--card);border:1px solid var(--bd);min-width:30px}
+.w.edit{cursor:move;outline:1px dashed var(--mut)}.w.edit.sel{outline:2px solid var(--ac)}.w.unb{border-color:var(--bad);color:var(--bad)}
+.lamp{width:22px;height:22px;border-radius:50%;padding:0;border:2px solid var(--pipe);background:var(--svgbg)}
+.barw{width:34px;height:120px;padding:0;position:relative;overflow:hidden}.barw i{position:absolute;left:0;right:0;bottom:0;background:var(--liq)}
+.edlay{display:grid;grid-template-columns:minmax(0,760px) 1fr;gap:14px}@media(max-width:1000px){.edlay{grid-template-columns:1fr}}
+li{margin:3px 0}
+.chk{padding-left:4px}.chk li{list-style:none}.chk li:before{content:"○ ";color:var(--mut)}.chk li.y:before{content:"✔ ";color:var(--ok)}
+.toast{position:fixed;right:14px;bottom:14px;background:var(--card);border:1px solid var(--bad);color:var(--tx);padding:8px 12px;border-radius:8px;max-width:340px;display:none;z-index:9}
+</style></head><body>
+<header>
+<a href="../../">← Laboratoare</a>
+<h1>Lucrarea 5 – Software și programare. SCADA</h1>
+<p>MSP2101 · supraveghere, achiziție de date, alarme, istoric · stația de biogaz (proces simulat, 2 RTU pe RS-485)</p>
+</header>
+<nav id="tabs">
+<button data-t="t1" class="on">1. Sinoptic și alarme</button>
+<button data-t="t2">2. Rețea de achiziție</button>
+<button data-t="t3">3. Editor de ecran</button>
+<button data-t="t4">4. Istoric și rapoarte</button>
+<button data-t="t5">5. Desfășurare și ThingsBoard</button>
+</nav>
+<div id="simbar">
+<button class="b g" id="run">▶ Rulează</button>
+<button class="b n" id="pause">⏸ Pauză</button>
+<label class="inl">Viteză <select id="spd" style="width:auto"><option value="1">1×</option><option value="10">10×</option><option value="60" selected>60×</option><option value="300">300×</option></select></label>
+<button class="b r s" id="rst">⟲ Resetează procesul</button>
+<span class="t" id="clk"></span>
+</div>
+<main>
+
+<!-- ===== 1 ===== -->
+<section id="t1" class="on">
+<div class="grid">
+<div>
+<div class="card"><h3>Sinoptic: fermentator de biogaz</h3>
+<svg id="syn" viewBox="0 0 810 430">
+<defs><linearGradient id="lg" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--liq)" stop-opacity=".85"/><stop offset="1" stop-color="var(--liq)" stop-opacity=".55"/></linearGradient></defs>
+<!-- conducte -->
+<path d="M82 300H170" stroke="var(--pipe)" stroke-width="8" fill="none"/>
+<path d="M260 70V36H600V96" stroke="var(--pipe)" stroke-width="8" fill="none"/>
+<path id="pf" d="M82 300H170" stroke="var(--liq)" stroke-width="4" fill="none" stroke-dasharray="8 8" opacity="0"/>
+<!-- rezervor -->
+<rect x="170" y="70" width="180" height="260" rx="10" fill="none" stroke="var(--tx)" stroke-width="3"/>
+<rect id="lvl" x="173" y="200" width="174" height="127" fill="url(#lg)"/>
+<path id="coil" d="M190 312h140M190 312l0-8h140l0-8h-140l0-8h140" stroke="var(--mut)" stroke-width="5" fill="none"/>
+<text x="260" y="90" text-anchor="middle" fill="var(--mut)" font-size="12">Fermentator</text>
+<!-- pompă -->
+<circle id="pump" cx="60" cy="300" r="22" fill="var(--svgbg)" stroke="var(--tx)" stroke-width="3"/><path d="M48 312L60 288L72 312Z" fill="var(--tx)" opacity=".6"/>
+<text x="60" y="345" text-anchor="middle" fill="var(--mut)" font-size="11">P101</text>
+<!-- gazometru -->
+<path d="M520 270V150A75 75 0 0 1 670 150V270Z" fill="none" stroke="var(--tx)" stroke-width="3"/>
+<rect id="gas" x="523" y="200" width="144" height="68" fill="var(--gas)" opacity=".5"/>
+<text x="595" y="130" text-anchor="middle" fill="var(--mut)" font-size="12">Gazometru</text>
+<!-- torță -->
+<path d="M700 100V70" stroke="var(--pipe)" stroke-width="6"/><path d="M670 110H700" stroke="var(--pipe)" stroke-width="6"/>
+<path id="flame" d="M700 70c-14-14-6-26 0-40c6 14 14 26 0 40z" fill="var(--warn)" opacity="0"/>
+<text x="715" y="90" fill="var(--mut)" font-size="11">Torță</text>
+<g id="tb"></g>
+</svg>
+<small>Click pe o casetă de tag pentru fișa ei (valoare, calitate, limite de alarmă, comenzi). Contur roșu/portocaliu = alarmă activă; clipește până la confirmare.</small>
+</div>
+<div class="card"><h3>Lista de alarme <span class="mut" id="alcnt"></span></h3>
+<div class="inl" style="margin-bottom:6px"><button class="b s" id="ackall">Confirmă toate</button>
+<label class="inl"><input type="checkbox" id="supp"> suprimă alarma L a TT101 (pornire)</label></div>
+<div style="overflow:auto;max-height:230px"><table id="altab"></table></div></div>
+<div class="card"><h3>Trend</h3>
+<div class="inl" style="margin-bottom:6px"><select id="trg" style="width:auto"><option value="T">Temperatură: TT101 + consemn SP101</option><option value="L">Nivel: LT101</option><option value="P">Presiune PT101 și debit FT101</option></select><select id="trw" style="width:auto"><option value="600">10 min</option><option value="1800" selected>30 min</option><option value="7200">2 h</option></select></div>
+<canvas id="trend" width="720" height="240"></canvas></div>
+</div>
+<div>
+<div class="card"><h3>Fișa tag-ului</h3><div id="face"></div></div>
+<div class="card"><h3>Defecte și perturbații (instructor)</h3>
+<div class="row"><label><span><input type="checkbox" data-f="sensStuck"> TT101 blocat (valoare constantă)</span></label></div>
+<div class="row"><label><span><input type="checkbox" data-f="sensDrift"> TT101 cu derivă (+0,6 °C/min)</span></label></div>
+<div class="row"><label><span><input type="checkbox" data-f="commR1"> RTU1 nu răspunde</span></label></div>
+<div class="row"><label><span><input type="checkbox" data-f="commR2"> RTU2 nu răspunde</span></label></div>
+<div class="row"><label><span><input type="checkbox" data-f="flareStuck"> Torța blocată închisă</span></label></div>
+<div class="row"><label><span><input type="checkbox" data-f="htrStuck"> Contactor încălzitor blocat pe ON</span></label></div>
+<div class="row"><label>Temperatura mediului <b id="v_ta"></b></label><input id="ta" type="range" min="-10" max="35" step="1" value="20"></div>
+</div>
+<div class="card"><h3>Jurnal de evenimente</h3><pre class="code" id="evlog" style="height:200px"></pre></div>
+</div></div>
+</section>
+
+<!-- ===== 2 ===== -->
+<section id="t2">
+<div class="grid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+<div>
+<div class="card"><h3>Dispozitive și interogare (polling)</h3>
+<div id="devs"></div></div>
+<div class="card"><h3>Magistrala RS-485 (partajată)</h3>
+<div class="row"><label>Viteză</label><select id="baud"><option>9600</option><option>19200</option><option>115200</option></select></div>
+<div class="row"><label>Dispozitive suplimentare pe magistrală <b id="v_ex"></b></label><input id="ex" type="range" min="0" max="30" step="1" value="0"></div>
+<div class="row"><label>Timeout per cerere <b id="v_to"></b></label><input id="to" type="range" min="50" max="1000" step="50" value="300"></div>
+<div class="row"><label>Reîncercări <b id="v_rt"></b></label><input id="rt" type="range" min="0" max="3" step="1" value="1"></div>
+<div class="kv" id="busout"></div>
+<small>Timpul unei tranzacții FC04 cu n registre: (8 + 5 + 2n) octeți × 11 biți / viteză + 8 ms pauze. Un dispozitiv defect blochează magistrala pe durata timeout-ului × (1 + reîncercări) la fiecare ciclu.</small></div>
+</div>
+<div>
+<div class="card"><h3>Calitatea tag-urilor</h3><div style="overflow:auto"><table id="qtab"></table></div>
+<small>good: valoare proaspătă · stale: mai veche de 3 perioade de interogare · bad: dispozitiv în eroare (≥ 3 cereri consecutive fără răspuns).</small></div>
+<div class="card"><h3>Cadre pe magistrală</h3><pre class="code" id="frames" style="height:260px;font-size:11.5px"></pre></div>
+</div></div>
+</section>
+
+<!-- ===== 3 ===== -->
+<section id="t3">
+<div class="edlay">
+<div>
+<div class="card"><h3>Ecranul operatorului</h3>
+<div class="inl" style="margin-bottom:8px">
+<button class="b" id="mEdit">Editare</button><button class="b n" id="mRun">Rulare</button>
+<span class="mut">|</span>
+<button class="b n s" data-add="text">+ Text</button><button class="b n s" data-add="value">+ Valoare</button><button class="b n s" data-add="bar">+ Bară</button><button class="b n s" data-add="lamp">+ Lampă</button><button class="b n s" data-add="alarm">+ Indicator alarmă</button><button class="b n s" data-add="setp">+ Consemn</button><button class="b n s" data-add="btn">+ Buton</button>
+</div>
+<div id="ed"></div>
+<div class="inl" style="margin-top:8px"><button class="b n s" id="edEx">Încarcă ecran exemplu</button><button class="b n s" id="edClr">Golește</button><button class="b n s" id="edExp">Exportă JSON</button><button class="b n s" id="edImp">Importă JSON</button></div>
+<textarea class="code" id="edjson" rows="3" style="margin-top:6px;height:64px" spellcheck="false" placeholder="JSON-ul ecranului"></textarea></div>
+</div>
+<div>
+<div class="card"><h3>Proprietăți</h3><div id="props"><span class="mut">Selectați un element în modul Editare.</span></div></div>
+<div class="card"><h3>Verificarea temei</h3><ul class="chk" id="chk"></ul><button class="b s" id="chkb">Verifică ecranul</button></div>
+</div></div>
+</section>
+
+<!-- ===== 4 ===== -->
+<section id="t4">
+<div class="grid" style="grid-template-columns:minmax(260px,340px) minmax(0,1fr)">
+<div>
+<div class="card"><h3>Arhivare cu compresie</h3>
+<div class="row"><label>Tag</label><select id="hg"><option>TT101</option><option>LT101</option><option>PT101</option><option>FT101</option></select></div>
+<div class="row"><label>Metodă</label><select id="hm"><option value="periodic">Periodică (la T secunde)</option><option value="deadband">Pe variație (bandă moartă)</option><option value="swing">Fereastră rotativă (swinging door)</option></select></div>
+<div class="row"><label><span id="hpl">Parametru</span> <b id="v_hp"></b></label><input id="hp" type="range" min="0" max="100" value="30"></div>
+<div class="kv" id="hout"></div>
+<small>Se arhivează doar punctele marcate; restul se reconstruiește prin interpolare liniară. Eroarea maximă arată cât din semnal s-a pierdut.</small></div>
+<div class="card"><h3>Raport de tură</h3><div class="kv" id="rep"></div>
+<div class="inl"><button class="b s" id="dlcsv">Descarcă istoricul (CSV)</button><button class="b s n" id="dlrep">Descarcă raportul (.txt)</button></div></div>
+</div>
+<div class="card"><h3>Istoric: brut și arhivat</h3><canvas id="hist" width="760" height="360"></canvas>
+<small>Linia subțire: eșantioane la 1 s (proces). Linia groasă: reconstrucție din punctele arhivate (cercuri).</small></div>
+</div>
+</section>
+
+<!-- ===== 5 ===== -->
+<section id="t5">
+<div class="card"><h3>Obiectivele lucrării</h3>
+<ul><li>Structura unui sistem SCADA: achiziție (drivere, polling), baza de date de tag-uri, sinoptic, alarme, istoric, comenzi.</li>
+<li>Calitatea datelor (good/stale/bad) și efectul întreruperii comunicației.</li>
+<li>Managementul alarmelor: praguri, bandă moartă, întârziere, confirmare, supresie, inundație de alarme.</li>
+<li>Arhivarea cu compresie și rapoarte de producție.</li>
+<li>Realizarea unui ecran de operator; punerea în funcțiune a unui SCADA real cu ThingsBoard și Arduino.</li></ul></div>
+
+<div class="card"><h3>A. Pe simulator (ședința 1)</h3><ol>
+<li><b>Sinoptic.</b> Porniți procesul la 60×. Notați timpul în care TT101 intră în banda consemnului. Identificați tag-urile, cine le produce (RTU1/RTU2) și care sunt scrise de SCADA.</li>
+<li><b>Alarme.</b> Câte alarme apar la pornire? Bifați suprimarea alarmei L și repetați. Ce alarme apar când TT101 este blocat? Dar cu derivă? Care detectează mai greu și de ce?</li>
+<li><b>Bandă moartă și întârziere.</b> Din fișa TT101 setați banda moartă la 0 și întârzierea la 0, apoi aduceți consemnul la 41 °C. Observați alarma care „pâlpâie”. Revenirea la valori rezonabile ce efect are?</li>
+<li><b>Comunicație.</b> Opriți RTU1: ce calitate au tag-urile, ce alarme apar, ce face procesul (reglarea e locală)? Încercați să scrieți SP101. Reporniți și verificați calitatea.</li>
+<li><b>Magistrala.</b> În fila 2 setați perioada de interogare la 200 ms pentru ambele RTU, apoi opriți RTU1: ce se întâmplă cu actualizarea tag-urilor de pe RTU2? Calculați timpul de ciclu. Cum îl reduceți (timeout, reîncercări, viteză)?</li>
+<li><b>Saturarea.</b> Adăugați dispozitive pe magistrală până când perioada efectivă depășește 1 s. Câte dispozitive suportă magistrala la 9600 și la 115200 baud?</li>
+<li><b>Siguranță.</b> Blocați contactorul pe ON: ce limită oprește încălzirea, câte alarme apar și în ce ordine? Este SCADA-ul o funcție de siguranță? Argumentați.</li>
+<li><b>Ecran.</b> În fila 3 construiți un ecran cu: valoarea TT101, bară pentru LT101, lampă pentru încălzitor, indicator de alarmă și un câmp pentru SP101. Rulați-l și testați scrierea unui consemn de 90 °C.</li>
+<li><b>Istoric.</b> În fila 4 comparați metodele de arhivare pentru TT101 (periodic 30 s, bandă moartă 0,2 °C, fereastră rotativă 0,2 °C): numărul de puncte, raportul de compresie, eroarea maximă. Care metodă ați folosi pentru debit și care pentru stări discrete?</li>
+</ol></div>
+
+<div class="card"><h3>B. Pe echipamente reale: Arduino + ThingsBoard (ședința 2)</h3>
+<p>Arhitectură: <b>Arduino Uno (RTU Modbus din lucrările 2 și 4) → RS-485/USB → <code>tb_bridge.py</code> → MQTT → ThingsBoard</b>. Scriptul interoghează RTU-ul (direct pe port serial sau prin gateway-ul Modbus TCP din lucrarea 2), publică telemetria și execută comenzi RPC (<code>setSetpoint</code>).</p>
+<ol>
+<li>Încărcați pe Uno sketch-ul <code>07_rtu_regulator</code> (lucrarea 4). Registre: IR0 = T×10, IR1 = comandă ×10; HR0 = consemn ×10.</li>
+<li>În ThingsBoard (CE local sau cloud) creați un dispozitiv „Fermentator”, copiați <i>access token</i>-ul.</li>
+<li>Rulați punta:
+<pre class="code">pip install pyserial paho-mqtt
+python tb_bridge.py --serial COM5 --host thingsboard.local --token TOKEN_ULTRA_SECRET
+# sau, prin gateway-ul din lucrarea 2:  --tcp 127.0.0.1:502
+# test fără ThingsBoard:                  --dry-run</pre></li>
+<li>Creați un dashboard: card de valoare pentru temperatură, grafic cu temperatura și consemnul, un indicator de comunicație (<code>comm_ok</code>), widget <i>Knob</i>/<i>Slider</i> care apelează RPC-ul <code>setSetpoint</code>.</li>
+<li>Configurați reguli de alarmă în <i>Device profile → Alarm rules</i>: <code>temperature &gt; 41</code> (Major) și <code>temperature &gt; 45</code> (Critical), cu durata minimă de 30 s; <code>comm_ok = false</code> (Major). Observați ciclul de viață: Active-Unacknowledged → Active-Acknowledged → Cleared.</li>
+<li>Scoateți cablul RS-485 pentru 20 s: ce vede operatorul? Comparați cu simulatorul.</li></ol>
+<small>Indicațiile sunt pentru ThingsBoard CE; denumirile meniurilor pot diferi ușor între versiuni.</small></div>
+
+<div class="card"><h3>Întrebări de control</h3><ol>
+<li>Care sunt componentele unui sistem SCADA și care este rolul fiecăreia?</li>
+<li>Prin ce diferă un SCADA de un PLC? De ce regulatorul rulează local, nu în SCADA?</li>
+<li>Ce înseamnă calitatea unui tag și de ce trebuie afișată operatorului?</li>
+<li>Ce este o inundație de alarme și cum se evită (bandă moartă, întârziere, supresie, prioritizare)?</li>
+<li>Descrieți ciclul de viață al unei alarme conform ISA-18.2.</li>
+<li>Cum influențează perioada de interogare și numărul de dispozitive încărcarea unei magistrale seriale?</li>
+<li>Când se preferă arhivarea pe variație față de cea periodică?</li>
+<li>Prin ce diferă ThingsBoard de un SCADA industrial clasic (WinCC, Ignition)?</li></ol></div>
+
+<div class="card"><h3>Referat</h3>
+<div class="row"><label>Nume și prenume / grupa</label><input type="text" id="r_nm"></div>
+<div class="row"><label>Rezultate A1–A9</label><textarea id="r_a" rows="7"></textarea></div>
+<div class="row"><label>Rezultate B (ThingsBoard) și concluzii</label><textarea id="r_b" rows="5"></textarea></div>
+<button class="b" id="dl">Descarcă referatul (.txt)</button></div>
+</section>
+</main>
+<div class="toast" id="toast"></div>
+<script src="engine.js"></script>
+<script src="ui.js"></script>
+</body></html>
